@@ -1,0 +1,606 @@
+#include "portal.h"
+#include "settings.h"
+#include "config.h"
+#include "ota.h"
+#include <Arduino.h>
+#include <WiFi.h>
+#include <WebServer.h>
+#include <DNSServer.h>
+#include <ArduinoJson.h>
+
+static WebServer server(80);
+static DNSServer dns;
+static bool      portalActive    = false;
+static bool      portalMsgNeeded = false;
+static OtaStatus lastOta;
+
+// ---- Page HTML embarquee ----
+static const char HTML_PAGE[] = R"rawhtml(
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clever Cellar</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#111;color:#ddd;padding:16px;max-width:520px;margin:auto}
+.logo-wrap{text-align:center;margin:16px 0 8px}
+.logo-wrap svg{width:72px;height:auto}
+h1{text-align:center;color:#a876c8;margin:0 0 20px;font-size:1.4em;font-weight:500}
+section{background:#1e1e2e;border-radius:10px;padding:16px;margin-bottom:16px}
+h2{color:#a876c8;font-size:1em;margin-bottom:12px;border-bottom:1px solid #3d2456;padding-bottom:6px}
+label{display:block;font-size:.82em;color:#aaa;margin-top:10px;margin-bottom:3px}
+input,select{width:100%;padding:8px 10px;background:#2a2a3e;border:1px solid #444;color:#eee;border-radius:5px;font-size:.95em}
+input:focus,select:focus{outline:none;border-color:#a876c8}
+.row2{display:flex;gap:10px}
+.row2>div{flex:1}
+.reco{font-size:.78em;color:#7ba;background:#152525;border-radius:4px;padding:6px 8px;margin-top:8px;line-height:1.5;white-space:pre-line}
+.hint{font-size:.75em;color:#777;margin-top:3px}
+.ldr-box{display:flex;align-items:center;gap:12px;background:#161626;border-radius:6px;padding:10px 14px;margin-top:8px}
+.ldr-num{font-size:1.8em;font-weight:bold;color:#a876c8;min-width:64px}
+.ldr-ind{font-size:.9em;padding:4px 10px;border-radius:4px;font-weight:bold}
+.ldr-ind.light{background:#3a2a00;color:#fa0}
+.ldr-ind.dark{background:#001a3a;color:#6af}
+button{width:100%;padding:10px;border:none;border-radius:5px;cursor:pointer;font-size:.95em;margin-top:8px}
+.btn-scan{background:#2a2a3e;color:#bbb;border:1px solid #444}
+.btn-scan:hover{background:#3a3a4e}
+.btn-save{background:#5b2f7c;color:#fff;font-weight:bold;font-size:1.1em;margin-top:20px;padding:14px}
+.btn-save:hover{background:#7a4aa0}
+.msg{text-align:center;margin-top:12px;font-size:.9em;min-height:1.4em}
+.lang-bar{display:flex;gap:8px;margin-top:8px}
+.lang-btn{flex:1;padding:9px 4px;background:#2a2a3e;color:#aaa;border:1px solid #444;border-radius:5px;cursor:pointer;font-size:.9em;text-align:center}
+.lang-btn.active{background:#5b2f7c;color:#fff;border-color:#a876c8}
+.lang-btn:hover:not(.active){background:#3a3a4e}
+.ota-row{display:flex;justify-content:space-between;align-items:center;font-size:.85em;margin-top:6px}
+.ota-ver{color:#a876c8;font-weight:bold;font-size:1em}
+.ota-new{color:#7bc87b;font-weight:bold;font-size:1em}
+.ota-status{font-size:.82em;margin-top:8px;min-height:1.2em}
+.btn-ota{background:#1e2a1e;color:#7bc87b;border:1px solid #3a5a3a;border-radius:5px;cursor:pointer;font-size:.9em;padding:8px;width:100%;margin-top:8px}
+.btn-ota:hover{background:#2a3a2a}
+.btn-ota:disabled{opacity:.5;cursor:default}
+.btn-ota-update{background:#2a1a3a;color:#a876c8;border-color:#5b2f7c;margin-top:6px}
+.btn-ota-update:hover{background:#3a2a4a}
+</style>
+</head>
+<body>
+<div class="logo-wrap">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+<defs><radialGradient id="g" cx="35%" cy="30%"><stop offset="0%" stop-color="#A876C8"/><stop offset="100%" stop-color="#5B2F7C"/></radialGradient></defs>
+<circle cx="200" cy="200" r="150" fill="#1e1e2e" stroke="#3D2456" stroke-width="3"/>
+<circle cx="200" cy="200" r="140" fill="none" stroke="#3D2456" stroke-width="1.4"/>
+<g stroke="#2B7A9B" fill="none" stroke-linecap="round" stroke-width="8"><path d="M 155 114 Q 200 80 245 114"/></g>
+<g stroke="#2B7A9B" fill="none" stroke-linecap="round" stroke-width="7"><path d="M 169 127 Q 200 101 231 127"/></g>
+<g stroke="#2B7A9B" fill="none" stroke-linecap="round" stroke-width="6"><path d="M 183 140 Q 200 126 217 140"/></g>
+<circle cx="200" cy="148" r="5" fill="#2B7A9B"/>
+<path d="M 206 170 Q 246 132 292 144 Q 288 170 252 180 Q 226 180 206 170 Z" fill="#7A9B5C" stroke="#4A6B3C" stroke-width="2.5"/>
+<line x1="200" y1="154" x2="200" y2="168" stroke="#6B4E3D" stroke-width="3.5" stroke-linecap="round"/>
+<g stroke="#3D2456" stroke-width="2">
+<circle cx="170" cy="182" r="18" fill="url(#g)"/><circle cx="200" cy="182" r="18" fill="url(#g)"/><circle cx="230" cy="182" r="18" fill="url(#g)"/>
+<circle cx="155" cy="212" r="18" fill="url(#g)"/><circle cx="185" cy="212" r="18" fill="url(#g)"/><circle cx="215" cy="212" r="18" fill="url(#g)"/><circle cx="245" cy="212" r="18" fill="url(#g)"/>
+<circle cx="170" cy="242" r="18" fill="url(#g)"/><circle cx="200" cy="242" r="18" fill="url(#g)"/><circle cx="230" cy="242" r="18" fill="url(#g)"/>
+<circle cx="185" cy="272" r="18" fill="url(#g)"/><circle cx="215" cy="272" r="18" fill="url(#g)"/>
+<circle cx="200" cy="302" r="18" fill="url(#g)"/>
+</g>
+</svg>
+</div>
+<h1>Clever Cellar</h1>
+
+<section>
+<h2 data-i18n="lang_title">Langue</h2>
+<div class="lang-bar">
+  <button id="btn-fr" class="lang-btn active" onclick="setLang('fr')">&#127467;&#127479; Fran&#231;ais</button>
+  <button id="btn-en" class="lang-btn" onclick="setLang('en')">&#127468;&#127463; English</button>
+  <button id="btn-it" class="lang-btn" onclick="setLang('it')">&#127470;&#127481; Italiano</button>
+</div>
+<input type="hidden" id="lang" value="fr">
+</section>
+
+<section>
+<h2 data-i18n="wifi_title">WiFi</h2>
+<label data-i18n="wifi_network">R&eacute;seau</label>
+<select id="ssid"></select>
+<button class="btn-scan" id="scanBtn" onclick="scanWifi()" data-i18n="wifi_scan_btn">Scanner les r&eacute;seaux</button>
+<label data-i18n="wifi_pass">Mot de passe</label>
+<input type="password" id="pass" data-i18n-ph="wifi_pass_ph" placeholder="Laisser vide pour conserver l'actuel">
+</section>
+
+<section>
+<h2 data-i18n="user_title">Utilisateur</h2>
+<label data-i18n="user_name">Nom</label>
+<input type="text" id="nom" placeholder="Dupont">
+<label data-i18n="user_firstname">Pr&eacute;nom</label>
+<input type="text" id="prenom" placeholder="Jean">
+<label data-i18n="user_email">Email</label>
+<input type="email" id="email" placeholder="jean@exemple.com">
+<label data-i18n="user_token">Token device</label>
+<input type="text" id="devToken" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+<p class="hint" data-i18n="user_token_hint">Identifiant unique de cette cave dans la base de donn&eacute;es.</p>
+</section>
+
+<section>
+<h2 data-i18n="ldr_title">Capteur lumi&egrave;re (LDR)</h2>
+<label data-i18n="ldr_realtime">Valeur LDR en temps r&eacute;el</label>
+<div class="ldr-box">
+  <div class="ldr-num" id="ldrNum">-</div>
+  <div class="ldr-ind" id="ldrInd">...</div>
+</div>
+<p class="hint" data-i18n="ldr_hint1">Placez la cave en situation r&eacute;elle pour calibrer le seuil.</p>
+<label data-i18n="ldr_threshold">Seuil obscurit&eacute; (0-4095)</label>
+<input type="number" id="ldrThr" min="0" max="4095">
+<label data-i18n="ldr_dark_time">Dur&eacute;e obscurit&eacute; avant veille (secondes)</label>
+<input type="number" id="darkS" min="5" max="3600">
+<label data-i18n="ldr_inact">Inactivit&eacute; avant veille (minutes)</label>
+<input type="number" id="inactM" min="1" max="120">
+</section>
+
+<section>
+<h2 data-i18n="alarm_title">Alarmes cave</h2>
+<div class="reco" id="alarmReco" data-i18n="alarm_reco">Recommandations &#8212; Rouges : 12-14&#176;C | Blancs : 8-12&#176;C | Plage : 10-16&#176;C
+Humidit&#233; optimale : 65-75% | Plage : 60-80%
+En dessous de 50% : bouchons secs. Au-dessus de 85% : risque de moisissures.</div>
+<label data-i18n="alarm_tmin">Temp&eacute;rature min (&#176;C)</label>
+<input type="number" id="tMin" min="0" max="30" step="0.5">
+<label data-i18n="alarm_tmax">Temp&eacute;rature max (&#176;C)</label>
+<input type="number" id="tMax" min="0" max="30" step="0.5">
+<div class="row2">
+  <div>
+    <label data-i18n="alarm_hmin">Humidit&eacute; min (%)</label>
+    <input type="number" id="hMin" min="0" max="100">
+  </div>
+  <div>
+    <label data-i18n="alarm_hmax">Humidit&eacute; max (%)</label>
+    <input type="number" id="hMax" min="0" max="100">
+  </div>
+</div>
+</section>
+
+<section>
+<h2 data-i18n="ota_title">Mise &agrave; jour firmware</h2>
+<div class="ota-row">
+  <span data-i18n="ota_current_lbl">Version install&eacute;e :</span>
+  <span class="ota-ver" id="otaCurrent">---</span>
+</div>
+<button class="btn-ota" id="otaCheckBtn" onclick="checkOta()" data-i18n="ota_check_btn">V&eacute;rifier les mises &agrave; jour</button>
+<div class="ota-status" id="otaStatus"></div>
+<div id="otaUpdateSection" style="display:none">
+  <div class="ota-row" style="margin-top:8px">
+    <span data-i18n="ota_latest_lbl">Nouvelle version :</span>
+    <span class="ota-new" id="otaLatest"></span>
+  </div>
+  <button class="btn-ota btn-ota-update" id="otaApplyBtn" onclick="applyOta()" data-i18n="ota_update_btn">Mettre &agrave; jour maintenant</button>
+</div>
+</section>
+
+<button class="btn-save" onclick="save()" data-i18n="save_btn">Enregistrer et red&eacute;marrer</button>
+<p class="msg" id="msg"></p>
+
+<script>
+var currentLang='fr';
+var cs='';
+
+var i18n={
+  fr:{
+    lang_title:'Langue',
+    wifi_title:'WiFi',
+    wifi_network:'Réseau',
+    wifi_scan_btn:'Scanner les réseaux',
+    wifi_scan_busy:'Scan en cours...',
+    wifi_pass:'Mot de passe',
+    wifi_pass_ph:"Laisser vide pour conserver l'actuel",
+    user_title:'Utilisateur',
+    user_name:'Nom',
+    user_firstname:'Prénom',
+    user_email:'Email',
+    user_token:'Token device (fourni par l\'administrateur)',
+    user_token_hint:'Identifiant unique de cette cave dans la base de données.',
+    ldr_title:'Capteur lumière (LDR)',
+    ldr_realtime:'Valeur LDR en temps réel',
+    ldr_hint1:'Placez la cave en situation réelle pour calibrer le seuil.',
+    ldr_threshold:'Seuil obscurité (0-4095)',
+    ldr_dark_time:'Durée obscurité avant veille (secondes)',
+    ldr_inact:'Inactivité avant veille (minutes)',
+    alarm_title:'Alarmes cave',
+    alarm_reco:'Recommandations — Rouges : 12-14°C | Blancs : 8-12°C | Plage : 10-16°C\nHumidité optimale : 65-75% | Plage : 60-80%\nEn dessous de 50% : bouchons secs. Au-dessus de 85% : risque de moisissures.',
+    alarm_tmin:'Température min (°C)',
+    alarm_tmax:'Température max (°C)',
+    alarm_hmin:'Humidité min (%)',
+    alarm_hmax:'Humidité max (%)',
+    save_btn:'Enregistrer et redémarrer',
+    saving:'Enregistrement...',
+    saved:'Sauvegardé ! Redémarrage en cours...',
+    error_prefix:'Erreur : ',
+    conn_lost:'Connexion perdue (redémarrage en cours ?)',
+    ldr_dark:'Obscur',
+    ldr_light:'Éclairé',
+    ota_title:'Mise à jour firmware',
+    ota_current_lbl:'Version installée :',
+    ota_latest_lbl:'Nouvelle version :',
+    ota_check_btn:'Vérifier les mises à jour',
+    ota_checking:'Vérification en cours...',
+    ota_up_to_date:'✓ Firmware à jour',
+    ota_update_avail:'Mise à jour disponible !',
+    ota_update_btn:'Mettre à jour maintenant',
+    ota_confirm:'Mettre à jour le firmware ? L\'appareil va redémarrer.',
+    ota_updating:'Téléchargement... Ne pas couper l\'alimentation.',
+    ota_success:'✓ Mise à jour réussie. Redémarrage en cours...',
+    ota_error:'Erreur'
+  },
+  en:{
+    lang_title:'Language',
+    wifi_title:'WiFi',
+    wifi_network:'Network',
+    wifi_scan_btn:'Scan networks',
+    wifi_scan_busy:'Scanning...',
+    wifi_pass:'Password',
+    wifi_pass_ph:'Leave blank to keep current',
+    user_title:'User',
+    user_name:'Last name',
+    user_firstname:'First name',
+    user_email:'Email',
+    user_token:'Device token (provided by administrator)',
+    user_token_hint:'Unique identifier for this cellar in the database.',
+    ldr_title:'Light sensor (LDR)',
+    ldr_realtime:'Real-time LDR value',
+    ldr_hint1:'Place the cellar in real conditions to calibrate the threshold.',
+    ldr_threshold:'Dark threshold (0-4095)',
+    ldr_dark_time:'Dark duration before sleep (seconds)',
+    ldr_inact:'Inactivity before sleep (minutes)',
+    alarm_title:'Cellar alarms',
+    alarm_reco:'Recommendations — Reds: 12-14°C | Whites: 8-12°C | Range: 10-16°C\nOptimal humidity: 65-75% | Range: 60-80%\nBelow 50%: corks dry out. Above 85%: mould risk.',
+    alarm_tmin:'Min temperature (°C)',
+    alarm_tmax:'Max temperature (°C)',
+    alarm_hmin:'Min humidity (%)',
+    alarm_hmax:'Max humidity (%)',
+    save_btn:'Save and restart',
+    saving:'Saving...',
+    saved:'Saved! Restarting...',
+    error_prefix:'Error: ',
+    conn_lost:'Connection lost (restarting?)',
+    ldr_dark:'Dark',
+    ldr_light:'Lit',
+    ota_title:'Firmware update',
+    ota_current_lbl:'Installed version:',
+    ota_latest_lbl:'New version:',
+    ota_check_btn:'Check for updates',
+    ota_checking:'Checking...',
+    ota_up_to_date:'✓ Firmware up to date',
+    ota_update_avail:'Update available!',
+    ota_update_btn:'Update now',
+    ota_confirm:'Update firmware? The device will restart.',
+    ota_updating:'Downloading... Do not cut power.',
+    ota_success:'✓ Update successful. Restarting...',
+    ota_error:'Error'
+  },
+  it:{
+    lang_title:'Lingua',
+    wifi_title:'WiFi',
+    wifi_network:'Rete',
+    wifi_scan_btn:'Cerca reti',
+    wifi_scan_busy:'Ricerca...',
+    wifi_pass:'Password',
+    wifi_pass_ph:"Lascia vuoto per mantenere l'attuale",
+    user_title:'Utente',
+    user_name:'Cognome',
+    user_firstname:'Nome',
+    user_email:'Email',
+    user_token:"Token device (fornito dall'amministratore)",
+    user_token_hint:'Identificatore unico di questa cantina nel database.',
+    ldr_title:'Sensore luce (LDR)',
+    ldr_realtime:'Valore LDR in tempo reale',
+    ldr_hint1:'Posiziona la cantina in condizioni reali per calibrare la soglia.',
+    ldr_threshold:'Soglia oscurità (0-4095)',
+    ldr_dark_time:'Durata buio prima dello standby (secondi)',
+    ldr_inact:'Inattività prima dello standby (minuti)',
+    alarm_title:'Allarmi cantina',
+    alarm_reco:'Raccomandazioni — Rossi: 12-14°C | Bianchi: 8-12°C | Gamma: 10-16°C\nUmidità ottimale: 65-75% | Gamma: 60-80%\nSotto il 50%: i tappi si seccano. Sopra l\'85%: rischio di muffa.',
+    alarm_tmin:'Temperatura min (°C)',
+    alarm_tmax:'Temperatura max (°C)',
+    alarm_hmin:'Umidità min (%)',
+    alarm_hmax:'Umidità max (%)',
+    save_btn:'Salva e riavvia',
+    saving:'Salvataggio...',
+    saved:'Salvato! Riavvio in corso...',
+    error_prefix:'Errore: ',
+    conn_lost:'Connessione persa (riavvio in corso?)',
+    ldr_dark:'Buio',
+    ldr_light:'Illuminato',
+    ota_title:'Aggiornamento firmware',
+    ota_current_lbl:'Versione installata:',
+    ota_latest_lbl:'Nuova versione:',
+    ota_check_btn:'Controlla aggiornamenti',
+    ota_checking:'Verifica in corso...',
+    ota_up_to_date:'✓ Firmware aggiornato',
+    ota_update_avail:'Aggiornamento disponibile!',
+    ota_update_btn:'Aggiorna adesso',
+    ota_confirm:'Aggiornare il firmware? Il dispositivo si riavvierà.',
+    ota_updating:'Download in corso... Non togliere alimentazione.',
+    ota_success:'✓ Aggiornamento riuscito. Riavvio in corso...',
+    ota_error:'Errore'
+  }
+};
+
+function setLang(lang){
+  currentLang=lang;
+  document.getElementById('lang').value=lang;
+  var tr=i18n[lang];
+  var els=document.querySelectorAll('[data-i18n]');
+  for(var i=0;i<els.length;i++){
+    var k=els[i].getAttribute('data-i18n');
+    if(tr[k]!==undefined)els[i].textContent=tr[k];
+  }
+  var phs=document.querySelectorAll('[data-i18n-ph]');
+  for(var i=0;i<phs.length;i++){
+    var k=phs[i].getAttribute('data-i18n-ph');
+    if(tr[k]!==undefined)phs[i].placeholder=tr[k];
+  }
+  var btns=['fr','en','it'];
+  for(var i=0;i<btns.length;i++){
+    document.getElementById('btn-'+btns[i]).className='lang-btn'+(btns[i]===lang?' active':'');
+  }
+}
+
+function scanWifi(){
+  var b=document.getElementById('scanBtn');
+  b.textContent=i18n[currentLang].wifi_scan_busy;b.disabled=true;
+  fetch('/scan').then(function(r){return r.json();}).then(function(n){
+    var s=document.getElementById('ssid'),p=s.value||cs;
+    s.innerHTML='';
+    n.sort(function(a,b){return b.rssi-a.rssi;}).forEach(function(x){
+      var o=document.createElement('option');
+      o.value=x.ssid;o.textContent=x.ssid+' ('+x.rssi+' dBm)';
+      if(x.ssid===p)o.selected=true;
+      s.appendChild(o);
+    });
+    if(!s.value&&p){
+      var o=document.createElement('option');o.value=p;o.textContent=p;o.selected=true;
+      s.insertBefore(o,s.firstChild);
+    }
+    b.textContent=i18n[currentLang].wifi_scan_btn;b.disabled=false;
+  }).catch(function(){b.textContent=i18n[currentLang].wifi_scan_btn;b.disabled=false;});
+}
+
+function updateLdr(){
+  fetch('/ldr').then(function(r){return r.json();}).then(function(d){
+    document.getElementById('ldrNum').textContent=d.value;
+    var ind=document.getElementById('ldrInd');
+    if(d.dark){ind.textContent=i18n[currentLang].ldr_dark;ind.className='ldr-ind dark';}
+    else{ind.textContent=i18n[currentLang].ldr_light;ind.className='ldr-ind light';}
+  }).catch(function(){});
+}
+setInterval(updateLdr,2000);
+updateLdr();
+
+fetch('/config').then(function(r){return r.json();}).then(function(c){
+  cs=c.ssid||'';
+  var s=document.getElementById('ssid');
+  s.innerHTML='';
+  if(cs){var o=document.createElement('option');o.value=cs;o.textContent=cs;s.appendChild(o);}
+  ['nom','prenom','email','devToken'].forEach(function(k){if(c[k])document.getElementById(k).value=c[k];});
+  var keys=['ldrThr','darkS','inactM','tMin','tMax','hMin','hMax'];
+  keys.forEach(function(k){if(c[k]!=null)document.getElementById(k).value=c[k];});
+  if(c.version)document.getElementById('otaCurrent').textContent=c.version;
+  setLang(c.lang||'fr');
+});
+
+function checkOta(){
+  var tr=i18n[currentLang];
+  var btn=document.getElementById('otaCheckBtn');
+  var st=document.getElementById('otaStatus');
+  btn.disabled=true;
+  st.style.color='#aaa';
+  st.textContent=tr.ota_checking;
+  document.getElementById('otaUpdateSection').style.display='none';
+  fetch('/ota').then(function(r){return r.json();}).then(function(d){
+    document.getElementById('otaCurrent').textContent=d.current||'?';
+    btn.disabled=false;
+    if(d.error){
+      st.style.color='#a44';st.textContent=tr.ota_error+': '+d.error;
+    }else if(d.available){
+      document.getElementById('otaLatest').textContent=d.latest;
+      document.getElementById('otaUpdateSection').style.display='';
+      st.style.color='#aa7';st.textContent=tr.ota_update_avail;
+    }else{
+      st.style.color='#7a7';st.textContent=tr.ota_up_to_date;
+    }
+  }).catch(function(e){
+    btn.disabled=false;
+    st.style.color='#a44';st.textContent=tr.ota_error+': '+e;
+  });
+}
+
+function applyOta(){
+  var tr=i18n[currentLang];
+  if(!confirm(tr.ota_confirm))return;
+  var applyBtn=document.getElementById('otaApplyBtn');
+  var checkBtn=document.getElementById('otaCheckBtn');
+  var st=document.getElementById('otaStatus');
+  applyBtn.disabled=true;checkBtn.disabled=true;
+  st.style.color='#aa7';st.textContent=tr.ota_updating;
+  fetch('/ota/update',{method:'POST'}).then(function(r){return r.json();}).then(function(d){
+    if(d.ok){st.style.color='#7a7';st.textContent=tr.ota_success;}
+    else{applyBtn.disabled=false;checkBtn.disabled=false;st.style.color='#a44';st.textContent=tr.ota_error+': '+(d.error||'');}
+  }).catch(function(){
+    // L'ESP32 redemmarre => connexion perdue = succes attendu
+    st.style.color='#7a7';st.textContent=tr.ota_success;
+  });
+}
+
+function save(){
+  var d={
+    ssid:document.getElementById('ssid').value,
+    pass:document.getElementById('pass').value,
+    nom:document.getElementById('nom').value,
+    prenom:document.getElementById('prenom').value,
+    email:document.getElementById('email').value,
+    devToken:document.getElementById('devToken').value,
+    lang:document.getElementById('lang').value,
+    ldrThr:parseInt(document.getElementById('ldrThr').value)||1000,
+    darkS:parseInt(document.getElementById('darkS').value)||30,
+    inactM:parseInt(document.getElementById('inactM').value)||30,
+    tMin:parseFloat(document.getElementById('tMin').value)||10,
+    tMax:parseFloat(document.getElementById('tMax').value)||14,
+    hMin:parseFloat(document.getElementById('hMin').value)||60,
+    hMax:parseFloat(document.getElementById('hMax').value)||80
+  };
+  var tr=i18n[currentLang];
+  document.getElementById('msg').textContent=tr.saving;
+  fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)})
+    .then(function(r){return r.json();}).then(function(r){
+      if(r.ok){document.getElementById('msg').style.color='#7a7';document.getElementById('msg').textContent=tr.saved;}
+      else{document.getElementById('msg').style.color='#a44';document.getElementById('msg').textContent=tr.error_prefix+(r.error||'');}
+    }).catch(function(){
+      document.getElementById('msg').style.color='#888';
+      document.getElementById('msg').textContent=tr.conn_lost;
+    });
+}
+</script>
+</body>
+</html>
+)rawhtml";
+
+// ---- Handlers HTTP ----
+
+static void handleRoot() {
+    server.send(200, "text/html; charset=utf-8", HTML_PAGE);
+}
+
+static void handleScan() {
+    int n = WiFi.scanNetworks();
+    String json = "[";
+    for (int i = 0; i < n; i++) {
+        if (i > 0) json += ",";
+        json += "{\"ssid\":\"";
+        json += WiFi.SSID(i);
+        json += "\",\"rssi\":";
+        json += WiFi.RSSI(i);
+        json += "}";
+    }
+    json += "]";
+    server.send(200, "application/json", json);
+}
+
+static void handleLdr() {
+    int val  = analogRead(PIN_LDR);
+    bool dark = (val < settings.ldrThreshold);
+    String json = "{\"value\":";
+    json += val;
+    json += ",\"dark\":";
+    json += dark ? "true" : "false";
+    json += "}";
+    server.send(200, "application/json", json);
+}
+
+static void handleOtaCheck() {
+    lastOta = checkOtaUpdate();
+    StaticJsonDocument<256> doc;
+    doc["current"]   = lastOta.currentVersion;
+    doc["latest"]    = lastOta.latestVersion;
+    doc["available"] = lastOta.updateAvailable;
+    if (!lastOta.error.isEmpty()) doc["error"] = lastOta.error;
+    String out; serializeJson(doc, out);
+    server.send(200, "application/json", out);
+}
+
+static void handleOtaUpdate() {
+    if (!lastOta.updateAvailable || lastOta.downloadUrl.isEmpty()) {
+        server.send(200, "application/json", "{\"ok\":false,\"error\":\"No update available\"}");
+        return;
+    }
+    server.send(200, "application/json", "{\"ok\":true}");
+    delay(200);
+    applyOtaUpdate(lastOta.downloadUrl);
+}
+
+static void handleConfig() {
+    StaticJsonDocument<512> doc;
+    doc["ssid"]     = settings.wifiSsid;
+    doc["nom"]      = settings.userNom;
+    doc["prenom"]   = settings.userPrenom;
+    doc["email"]    = settings.userEmail;
+    doc["devToken"] = settings.deviceToken;
+    doc["lang"]     = settings.language;
+    doc["version"]  = FIRMWARE_VERSION;
+    doc["ldrThr"]   = settings.ldrThreshold;
+    doc["darkS"]    = settings.darkTimeoutS;
+    doc["inactM"]   = settings.inactivityTimeoutMin;
+    doc["tMin"]     = settings.tempMin;
+    doc["tMax"]     = settings.tempMax;
+    doc["hMin"]     = settings.humMin;
+    doc["hMax"]     = settings.humMax;
+    String out;
+    serializeJson(doc, out);
+    server.send(200, "application/json", out);
+}
+
+static void handleSave() {
+    String body = server.arg("plain");
+    StaticJsonDocument<512> doc;
+    if (deserializeJson(doc, body)) {
+        server.send(400, "application/json", "{\"ok\":false,\"error\":\"JSON invalide\"}");
+        return;
+    }
+    const char* newSsid = doc["ssid"] | "";
+    if (strlen(newSsid) > 0) settings.wifiSsid = newSsid;
+    const char* newPass = doc["pass"] | "";
+    if (strlen(newPass) > 0) settings.wifiPass = newPass;
+    settings.userNom              = doc["nom"]      | settings.userNom.c_str();
+    settings.userPrenom           = doc["prenom"]   | settings.userPrenom.c_str();
+    settings.userEmail            = doc["email"]    | settings.userEmail.c_str();
+    settings.deviceToken          = doc["devToken"] | settings.deviceToken.c_str();
+    settings.language             = doc["lang"]     | settings.language.c_str();
+    settings.ldrThreshold         = doc["ldrThr"]   | settings.ldrThreshold;
+    settings.darkTimeoutS         = doc["darkS"]    | settings.darkTimeoutS;
+    settings.inactivityTimeoutMin = doc["inactM"]   | settings.inactivityTimeoutMin;
+    settings.tempMin              = doc["tMin"]     | settings.tempMin;
+    settings.tempMax              = doc["tMax"]     | settings.tempMax;
+    settings.humMin               = doc["hMin"]     | settings.humMin;
+    settings.humMax               = doc["hMax"]     | settings.humMax;
+    saveSettings();
+    server.send(200, "application/json", "{\"ok\":true}");
+    delay(500);
+    ESP.restart();
+}
+
+static void handleNotFound() {
+    server.sendHeader("Location", "http://192.168.4.1/", true);
+    server.send(302, "text/plain", "");
+}
+
+// ---- API publique ----
+
+void startPortal() {
+    WiFi.disconnect(true);
+    delay(200);
+    WiFi.mode(WIFI_AP);
+    WiFi.softAP(PORTAL_AP_SSID);
+    delay(100);
+    dns.start(53, "*", WiFi.softAPIP());
+    server.on("/",          HTTP_GET,  handleRoot);
+    server.on("/scan",      HTTP_GET,  handleScan);
+    server.on("/ldr",       HTTP_GET,  handleLdr);
+    server.on("/config",    HTTP_GET,  handleConfig);
+    server.on("/save",      HTTP_POST, handleSave);
+    server.on("/ota",       HTTP_GET,  handleOtaCheck);
+    server.on("/ota/update",HTTP_POST, handleOtaUpdate);
+    server.onNotFound(handleNotFound);
+    server.begin();
+    portalActive    = true;
+    portalMsgNeeded = true;
+    Serial.printf("Portail: SSID=%s  IP=%s\n",
+                  PORTAL_AP_SSID, WiFi.softAPIP().toString().c_str());
+}
+
+void handlePortal() {
+    dns.processNextRequest();
+    server.handleClient();
+}
+
+bool isPortalActive() {
+    return portalActive;
+}
+
+bool isPortalMsgNeeded() {
+    if (portalMsgNeeded) { portalMsgNeeded = false; return true; }
+    return false;
+}

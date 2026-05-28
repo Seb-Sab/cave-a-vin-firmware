@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <title>Clever Cellar Logo - Monochrome (gravure)</title>
+
+  <!-- Cercle extérieur boîtier -->
+  <circle cx="200" cy="200" r="150" fill="none" stroke="#000000" stroke-width="3"/>
+  <circle cx="200" cy="200" r="140" fill="none" stroke="#000000" stroke-width="1.4"/>
+
+  <!-- Wi-Fi -->
+  <g stroke="#000000" fill="none" stroke-linecap="round" stroke-width="8">
+    <path d="M 155 114 Q 200 80 245 114"/>
+  </g>
+  <g stroke="#000000" fill="none" stroke-linecap="round" stroke-width="7">
+    <path d="M 169 127 Q 200 101 231 127"/>
+  </g>
+  <g stroke="#000000" fill="none" stroke-linecap="round" stroke-width="6">
+    <path d="M 183 140 Q 200 126 217 140"/>
+  </g>
+  <circle cx="200" cy="148" r="5" fill="#000000"/>
+
+  <!-- Feuille (contour seul pour gravure) -->
+  <path d="M 206 170 Q 246 132 292 144 Q 288 170 252 180 Q 226 180 206 170 Z"
+        fill="none" stroke="#000000" stroke-width="2.5"/>
+
+  <!-- Tige -->
+  <line x1="200" y1="154" x2="200" y2="168" stroke="#000000" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Grappe (contours seuls pour gravure) -->
+  <g fill="none" stroke="#000000" stroke-width="2">
+    <circle cx="170" cy="182" r="18"/>
+    <circle cx="200" cy="182" r="18"/>
+    <circle cx="230" cy="182" r="18"/>
+    <circle cx="155" cy="212" r="18"/>
+    <circle cx="185" cy="212" r="18"/>
+    <circle cx="215" cy="212" r="18"/>
+    <circle cx="245" cy="212" r="18"/>
+    <circle cx="170" cy="242" r="18"/>
+    <circle cx="200" cy="242" r="18"/>
+    <circle cx="230" cy="242" r="18"/>
+    <circle cx="185" cy="272" r="18"/>
+    <circle cx="215" cy="272" r="18"/>
+    <circle cx="200" cy="302" r="18"/>
+  </g>
+</svg>

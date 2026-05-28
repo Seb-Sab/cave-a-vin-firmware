@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 520" width="400" height="520">
+  <title>Clever Cellar Logo</title>
+  <defs>
+    <radialGradient id="grape" cx="35%" cy="30%">
+      <stop offset="0%" stop-color="#A876C8"/>
+      <stop offset="100%" stop-color="#5B2F7C"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Cercle extérieur boîtier (centré à 200, 200) -->
+  <circle cx="200" cy="200" r="150" fill="#FFFFFF" stroke="#3D2456" stroke-width="3"/>
+  <circle cx="200" cy="200" r="140" fill="none" stroke="#3D2456" stroke-width="1.4"/>
+
+  <!-- Wi-Fi épais (bleu) -->
+  <g stroke="#2B7A9B" fill="none" stroke-linecap="round" stroke-width="8">
+    <path d="M 155 114 Q 200 80 245 114"/>
+  </g>
+  <g stroke="#2B7A9B" fill="none" stroke-linecap="round" stroke-width="7">
+    <path d="M 169 127 Q 200 101 231 127"/>
+  </g>
+  <g stroke="#2B7A9B" fill="none" stroke-linecap="round" stroke-width="6">
+    <path d="M 183 140 Q 200 126 217 140"/>
+  </g>
+  <circle cx="200" cy="148" r="5" fill="#2B7A9B"/>
+
+  <!-- Feuille de vigne lancéolée -->
+  <path d="M 206 170 Q 246 132 292 144 Q 288 170 252 180 Q 226 180 206 170 Z"
+        fill="#7A9B5C" stroke="#4A6B3C" stroke-width="2.5"/>
+
+  <!-- Tige principale -->
+  <line x1="200" y1="154" x2="200" y2="168" stroke="#6B4E3D" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Grappe -->
+  <g stroke="#3D2456" stroke-width="2">
+    <!-- Rang 1 -->
+    <circle cx="170" cy="182" r="18" fill="url(#grape)"/>
+    <circle cx="200" cy="182" r="18" fill="url(#grape)"/>
+    <circle cx="230" cy="182" r="18" fill="url(#grape)"/>
+    <!-- Rang 2 -->
+    <circle cx="155" cy="212" r="18" fill="url(#grape)"/>
+    <circle cx="185" cy="212" r="18" fill="url(#grape)"/>
+    <circle cx="215" cy="212" r="18" fill="url(#grape)"/>
+    <circle cx="245" cy="212" r="18" fill="url(#grape)"/>
+    <!-- Rang 3 -->
+    <circle cx="170" cy="242" r="18" fill="url(#grape)"/>
+    <circle cx="200" cy="242" r="18" fill="url(#grape)"/>
+    <circle cx="230" cy="242" r="18" fill="url(#grape)"/>
+    <!-- Rang 4 -->
+    <circle cx="185" cy="272" r="18" fill="url(#grape)"/>
+    <circle cx="215" cy="272" r="18" fill="url(#grape)"/>
+    <!-- Pointe -->
+    <circle cx="200" cy="302" r="18" fill="url(#grape)"/>
+  </g>
+
+  <!-- Texte -->
+  <text x="200" y="410" text-anchor="middle"
+        font-family="Helvetica, Arial, sans-serif"
+        font-size="38" font-weight="500" fill="#3D2456">Clever Cellar</text>
+</svg>

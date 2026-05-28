@@ -1,0 +1,16 @@
+.pio/
+.vscode/
+*.swp
+*.bak
+
+# Credentials WiFi + Supabase — ne jamais committer
+# Utiliser include/config.h.example comme template
+include/config.h
+
+# IDE / outils locaux
+.claude/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db

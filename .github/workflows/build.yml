@@ -1,0 +1,58 @@
+name: Build & Release Firmware
+
+# Declenche sur chaque tag v1.2.3
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # pour creer la release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.ini') }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      # Genere config.h a partir des secrets GitHub et du tag courant
+      - name: Create config.h from secrets
+        env:
+          WIFI_SSID:        ${{ secrets.WIFI_SSID }}
+          WIFI_PASS:        ${{ secrets.WIFI_PASS }}
+          SUPABASE_URL:     ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          FIRMWARE_VERSION: ${{ github.ref_name }}
+          GITHUB_REPO_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO_NAME:  cave-a-vin-firmware
+        run: |
+          envsubst '${WIFI_SSID} ${WIFI_PASS} ${SUPABASE_URL} ${SUPABASE_ANON_KEY} ${FIRMWARE_VERSION} ${GITHUB_REPO_OWNER} ${GITHUB_REPO_NAME}' \
+            < include/config.h.example > include/config.h
+
+      - name: Build firmware
+        run: pio run -e wemos_d1_mini32
+
+      # Cree la release GitHub et joint le firmware.bin
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: .pio/build/wemos_d1_mini32/firmware.bin
+          generate_release_notes: true
+          name: "Clever Cellar ${{ github.ref_name }}"
