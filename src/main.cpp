@@ -450,7 +450,7 @@ void setupWifi() {
   }
   if (WiFi.status() == WL_CONNECTED) {
     ledsFlash(strip.Color(0, 255, 0), 2);
-    showMsg(T->wifiOk, WiFi.localIP().toString());
+    showMsg(T->wifiOk, WiFi.localIP().toString(), FIRMWARE_VERSION);
   } else {
     ledsFlash(strip.Color(255, 0, 0), 2);
     showMsg(T->wifiFailed, T->offlineMode);
