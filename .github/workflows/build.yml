@@ -41,8 +41,13 @@ jobs:
           GITHUB_REPO_OWNER: Seb-Sab
           GITHUB_REPO_NAME:  cave-a-vin-firmware
         run: |
-          envsubst '${SUPABASE_URL} ${SUPABASE_ANON_KEY} ${FIRMWARE_VERSION} ${GITHUB_REPO_OWNER} ${GITHUB_REPO_NAME}' \
-            < include/config.h.example > include/config.h
+          python3 - <<'EOF'
+          import os
+          txt = open('include/config.h.example').read()
+          for key in ['SUPABASE_URL','SUPABASE_ANON_KEY','FIRMWARE_VERSION','GITHUB_REPO_OWNER','GITHUB_REPO_NAME']:
+              txt = txt.replace('${' + key + '}', os.environ[key].strip())
+          open('include/config.h', 'w').write(txt)
+          EOF
 
       - name: Build firmware
         run: pio run -e wemos_d1_mini32
