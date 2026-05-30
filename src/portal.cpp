@@ -224,7 +224,8 @@ var i18n={
     ota_confirm:'Mettre à jour le firmware ? L\'appareil va redémarrer.',
     ota_updating:'Téléchargement... Ne pas couper l\'alimentation.',
     ota_success:'✓ Mise à jour réussie. Redémarrage en cours...',
-    ota_error:'Erreur'
+    ota_error:'Erreur',
+    ota_no_wifi:'WiFi non connecté. Si vous venez de configurer le réseau, enregistrez et redémarrez d\'abord.'
   },
   en:{
     lang_title:'Language',
@@ -270,7 +271,8 @@ var i18n={
     ota_confirm:'Update firmware? The device will restart.',
     ota_updating:'Downloading... Do not cut power.',
     ota_success:'✓ Update successful. Restarting...',
-    ota_error:'Error'
+    ota_error:'Error',
+    ota_no_wifi:'WiFi not connected. If you just configured the network, save and restart first.'
   },
   it:{
     lang_title:'Lingua',
@@ -316,7 +318,8 @@ var i18n={
     ota_confirm:'Aggiornare il firmware? Il dispositivo si riavvierà.',
     ota_updating:'Download in corso... Non togliere alimentazione.',
     ota_success:'✓ Aggiornamento riuscito. Riavvio in corso...',
-    ota_error:'Errore'
+    ota_error:'Errore',
+    ota_no_wifi:'WiFi non connesso. Se hai appena configurato la rete, salva e riavvia prima.'
   }
 };
 
@@ -394,7 +397,9 @@ function checkOta(){
   fetch('/ota').then(function(r){return r.json();}).then(function(d){
     document.getElementById('otaCurrent').textContent=d.current||'?';
     btn.disabled=false;
-    if(d.error){
+    if(d.error==='no_wifi'){
+      st.style.color='#aa7';st.textContent=tr.ota_no_wifi;
+    }else if(d.error){
       st.style.color='#a44';st.textContent=tr.ota_error+': '+d.error;
     }else if(d.available){
       document.getElementById('otaLatest').textContent=d.latest;
@@ -492,6 +497,10 @@ static void handleLdr() {
 }
 
 static void handleOtaCheck() {
+    if (WiFi.status() != WL_CONNECTED) {
+        server.send(200, "application/json", "{\"current\":\"" FIRMWARE_VERSION "\",\"available\":false,\"error\":\"no_wifi\"}");
+        return;
+    }
     lastOta = checkOtaUpdate();
     StaticJsonDocument<256> doc;
     doc["current"]   = lastOta.currentVersion;
@@ -572,7 +581,13 @@ static void handleNotFound() {
 void startPortal() {
     WiFi.disconnect(true);
     delay(200);
-    WiFi.mode(WIFI_AP);
+    if (settings.wifiSsid.length() > 0) {
+        // Identifiants connus : dual mode AP+STA pour avoir internet (OTA)
+        WiFi.mode(WIFI_AP_STA);
+        WiFi.begin(settings.wifiSsid.c_str(), settings.wifiPass.c_str());
+    } else {
+        WiFi.mode(WIFI_AP);
+    }
     WiFi.softAP(PORTAL_AP_SSID);
     delay(100);
     dns.start(53, "*", WiFi.softAPIP());
