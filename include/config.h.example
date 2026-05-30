@@ -48,6 +48,9 @@
 // ---- LDR seuil veille ----
 #define LDR_DARK_THRESHOLD  1000
 
+// ---- Touch buttons (T9=GPIO32=BTN+, T8=GPIO33=BTN-) ----
+#define TOUCH_THRESHOLD     700
+
 // ---- Mesure quotidienne en deep sleep ----
 #define ENV_DAILY_WAKEUP_US  (24ULL * 60ULL * 60ULL * 1000000ULL)
 #define BME_WARMUP_MS        (5UL  * 60UL  * 1000UL)

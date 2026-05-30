@@ -12,7 +12,6 @@
 #include <esp_sleep.h>
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
-#include <driver/rtc_io.h>
 
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -278,13 +277,13 @@ void doLookup(const String& uid) {
         lastSec = sec;
         showWineCountdown(lastName, lastMillesime, lastQty, sec);
       }
-      if (digitalRead(PIN_BTN_MINUS) == LOW) {
-        while (digitalRead(PIN_BTN_MINUS) == LOW) delay(10);
+      if (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
+        while (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) delay(10);
         doDecrement = false;
         break;
       }
-      if (digitalRead(PIN_BTN_PLUS) == LOW) {
-        while (digitalRead(PIN_BTN_PLUS) == LOW) delay(10);
+      if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) {
+        while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) delay(10);
         lastActivityAt = millis();
         doUpdate(+1);
         delay(1500);
@@ -311,8 +310,8 @@ void doLookup(const String& uid) {
     }
     unsigned long deadline = millis() + EDIT_WINDOW_MS;
     while (millis() < deadline) {
-      if (digitalRead(PIN_BTN_PLUS) == LOW) {
-        while (digitalRead(PIN_BTN_PLUS) == LOW) delay(10);
+      if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) {
+        while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) delay(10);
         lastActivityAt = millis();
         if (found) {
           doUpdate(+1);
@@ -324,8 +323,8 @@ void doLookup(const String& uid) {
         showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
         return;
       }
-      if (digitalRead(PIN_BTN_MINUS) == LOW) {
-        while (digitalRead(PIN_BTN_MINUS) == LOW) delay(10);
+      if (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
+        while (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) delay(10);
         break;
       }
       checkSleep();
@@ -407,8 +406,8 @@ void sendEnvironment() {
             "T=" + String(t, 1) + "C  H=" + String(h, 0) + "%",
             T->pressBtnAck);
     while (true) {
-      if (digitalRead(PIN_BTN_PLUS) == LOW || digitalRead(PIN_BTN_MINUS) == LOW) {
-        while (digitalRead(PIN_BTN_PLUS) == LOW || digitalRead(PIN_BTN_MINUS) == LOW)
+      if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD || touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
+        while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD || touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD)
           delay(10);
         lastActivityAt = millis();
         break;
@@ -460,9 +459,9 @@ void setupWifi() {
 
 // ============ VISUEL BOUTONS OLED ============
 void applyBtnOverlay() {
-  if (digitalRead(PIN_BTN_PLUS) == LOW)
+  if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD)
     oled.fillRect(OLED_WIDTH - 5, 0, 5, OLED_HEIGHT, SH110X_WHITE);
-  if (digitalRead(PIN_BTN_MINUS) == LOW)
+  if (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD)
     oled.fillRect(0, 0, 5, OLED_HEIGHT, SH110X_WHITE);
 }
 
@@ -491,8 +490,8 @@ void updateBtnVisual() {
 
 // ============ BOUTONS ============
 void handleButtons() {
-  bool plus  = (digitalRead(PIN_BTN_PLUS)  == LOW);
-  bool minus = (digitalRead(PIN_BTN_MINUS) == LOW);
+  bool plus  = (touchRead(PIN_BTN_PLUS)  < TOUCH_THRESHOLD);
+  bool minus = (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD);
   unsigned long now = millis();
 
   static unsigned long bothDownAt  = 0;
@@ -590,9 +589,9 @@ void goToSleep() {
   digitalWrite(PIN_MOSFET, HIGH);
 
   esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_LDR, 1);
-  rtc_gpio_pullup_en((gpio_num_t)PIN_BTN_PLUS);
-  rtc_gpio_pulldown_dis((gpio_num_t)PIN_BTN_PLUS);
-  esp_sleep_enable_ext1_wakeup(1ULL << PIN_BTN_PLUS, ESP_EXT1_WAKEUP_ALL_LOW);
+  touchSleepWakeUpEnable(PIN_BTN_PLUS,  TOUCH_THRESHOLD);
+  touchSleepWakeUpEnable(PIN_BTN_MINUS, TOUCH_THRESHOLD);
+  esp_sleep_enable_touchpad_wakeup();
   esp_sleep_enable_timer_wakeup(ENV_DAILY_WAKEUP_US);
 
   Serial.println("Deep sleep...");
@@ -638,8 +637,6 @@ void setup() {
   digitalWrite(PIN_MOSFET, LOW);
   pinMode(PIN_LED,      OUTPUT);
   digitalWrite(PIN_LED, LOW);
-  pinMode(PIN_BTN_PLUS,  INPUT_PULLUP);
-  pinMode(PIN_BTN_MINUS, INPUT_PULLUP);
 
   strip.begin();
   strip.setBrightness(80);
@@ -657,9 +654,9 @@ void setup() {
   digitalWrite(PIN_I2C_SDA, HIGH); delayMicroseconds(5);
 
   esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
-  if      (cause == ESP_SLEEP_WAKEUP_EXT0)  Serial.println("Reveil par LDR");
-  else if (cause == ESP_SLEEP_WAKEUP_EXT1)  Serial.println("Reveil par BTN+");
-  else if (cause == ESP_SLEEP_WAKEUP_TIMER) Serial.println("Reveil par timer");
+  if      (cause == ESP_SLEEP_WAKEUP_EXT0)      Serial.println("Reveil par LDR");
+  else if (cause == ESP_SLEEP_WAKEUP_TOUCHPAD)  Serial.println("Reveil par touch");
+  else if (cause == ESP_SLEEP_WAKEUP_TIMER)     Serial.println("Reveil par timer");
 
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
   Wire.setTimeOut(10);
