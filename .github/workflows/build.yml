@@ -35,15 +35,13 @@ jobs:
       # Genere config.h a partir des secrets GitHub et du tag courant
       - name: Create config.h from secrets
         env:
-          WIFI_SSID:        ${{ secrets.WIFI_SSID }}
-          WIFI_PASS:        ${{ secrets.WIFI_PASS }}
-          SUPABASE_URL:     ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL:      ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          FIRMWARE_VERSION: ${{ github.ref_name }}
+          FIRMWARE_VERSION:  ${{ github.ref_name }}
           GITHUB_REPO_OWNER: Seb-Sab
           GITHUB_REPO_NAME:  cave-a-vin-firmware
         run: |
-          envsubst '${WIFI_SSID} ${WIFI_PASS} ${SUPABASE_URL} ${SUPABASE_ANON_KEY} ${FIRMWARE_VERSION} ${GITHUB_REPO_OWNER} ${GITHUB_REPO_NAME}' \
+          envsubst '${SUPABASE_URL} ${SUPABASE_ANON_KEY} ${FIRMWARE_VERSION} ${GITHUB_REPO_OWNER} ${GITHUB_REPO_NAME}' \
             < include/config.h.example > include/config.h
 
       - name: Build firmware
