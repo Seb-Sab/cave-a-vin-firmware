@@ -743,6 +743,13 @@ void loop() {
     sendEnvironment();
   }
 
+  static unsigned long lastTouchLog = 0;
+  if (millis() - lastTouchLog > 500) {
+    lastTouchLog = millis();
+    Serial.printf("Touch T+:%d T-:%d seuil:%d\n",
+                  touchRead(PIN_BTN_PLUS), touchRead(PIN_BTN_MINUS), TOUCH_THRESHOLD);
+  }
+
   updateLeds();
   updateBtnVisual();
   checkSleep();
