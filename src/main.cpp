@@ -479,8 +479,8 @@ void redrawCurrentScreen() {
 void updateBtnVisual() {
   static bool wasPlusActive  = false;
   static bool wasMinusActive = false;
-  bool plusActive  = (digitalRead(PIN_BTN_PLUS)  == LOW);
-  bool minusActive = (digitalRead(PIN_BTN_MINUS) == LOW);
+  bool plusActive  = (touchRead(PIN_BTN_PLUS)  < TOUCH_THRESHOLD);
+  bool minusActive = (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD);
   if (plusActive != wasPlusActive || minusActive != wasMinusActive) {
     wasPlusActive  = plusActive;
     wasMinusActive = minusActive;
