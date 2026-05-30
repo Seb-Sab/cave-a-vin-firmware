@@ -326,6 +326,7 @@ void sendEnvironment() {
         lastActivityAt = millis();
         break;
       }
+      checkSleep();
       delay(50);
     }
     redrawCurrentScreen();
