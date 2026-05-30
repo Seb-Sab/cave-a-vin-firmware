@@ -40,7 +40,7 @@ jobs:
           SUPABASE_URL:     ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           FIRMWARE_VERSION: ${{ github.ref_name }}
-          GITHUB_REPO_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO_OWNER: Seb-Sab
           GITHUB_REPO_NAME:  cave-a-vin-firmware
         run: |
           envsubst '${WIFI_SSID} ${WIFI_PASS} ${SUPABASE_URL} ${SUPABASE_ANON_KEY} ${FIRMWARE_VERSION} ${GITHUB_REPO_OWNER} ${GITHUB_REPO_NAME}' \
