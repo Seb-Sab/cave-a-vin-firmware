@@ -220,6 +220,30 @@ bool callApi(const String& url, JsonDocument& doc) {
 }
 
 // ============ ACTIONS ============
+void showWineCountdown(const String& name, const String& millesime, int qty, int sec) {
+  oled.clearDisplay();
+  oled.setTextColor(SH110X_WHITE);
+  oled.setTextSize(1);
+  String n = name;
+  if (n.length() > 21) n = n.substring(0, 21);
+  oled.setCursor(0, 0);
+  oled.println(n);
+  oled.setCursor(0, 10);
+  oled.print(millesime.length() ? millesime : "-");
+  oled.setCursor(0, 22);
+  oled.print(T->qty);
+  oled.print(qty);
+  oled.setTextSize(2);
+  String cs = String(sec) + "s";
+  oled.setCursor(128 - (int)cs.length() * 12, 20);
+  oled.print(cs);
+  oled.setTextSize(1);
+  oled.setCursor(0, 56);
+  oled.print(T->cancelMinus);
+  applyBtnOverlay();
+  oled.display();
+}
+
 void doLookup(const String& uid) {
   showMsg(T->searching, uid);
   StaticJsonDocument<512> doc;
@@ -241,13 +265,76 @@ void doLookup(const String& uid) {
   lastMillesime = found ? doc["millesime"].as<String>() : String("");
   lastQty       = doc["qte"] | 0;
   lastReadAt    = millis();
-  if (found) {
+
+  if (found && lastQty > 0) {
+    // Vin present : compte a rebours puis decrement automatique
     ledsFlash(strip.Color(0, 255, 0), 2);
-    showWine(lastName, lastMillesime, lastQty, T->plusMinusModify);
+    unsigned long deadline = millis() + EDIT_WINDOW_MS;
+    int lastSec = -1;
+    bool doDecrement = true;
+    while (millis() < deadline) {
+      int sec = (int)((deadline - millis() + 999) / 1000);
+      if (sec != lastSec) {
+        lastSec = sec;
+        showWineCountdown(lastName, lastMillesime, lastQty, sec);
+      }
+      if (digitalRead(PIN_BTN_MINUS) == LOW) {
+        while (digitalRead(PIN_BTN_MINUS) == LOW) delay(10);
+        doDecrement = false;
+        break;
+      }
+      if (digitalRead(PIN_BTN_PLUS) == LOW) {
+        while (digitalRead(PIN_BTN_PLUS) == LOW) delay(10);
+        lastActivityAt = millis();
+        doUpdate(+1);
+        delay(1500);
+        lastUid = "";
+        showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
+        return;
+      }
+      checkSleep();
+      delay(50);
+    }
+    if (doDecrement) {
+      lastActivityAt = millis();
+      doUpdate(-1);
+      delay(1500);
+    }
   } else {
-    ledsFlash(strip.Color(255, 128, 0), 2);
-    showWine(lastName, lastMillesime, lastQty, T->longPlusRegister);
+    // Vin inconnu ou stock vide : proposer d'ajouter
+    if (found) {
+      ledsFlash(strip.Color(255, 200, 0), 2);
+      showMsg(lastName, T->plusToAdd, T->minusToIgnore);
+    } else {
+      ledsFlash(strip.Color(255, 128, 0), 2);
+      showMsg(T->notRegistered, T->plusToAdd, T->minusToIgnore);
+    }
+    unsigned long deadline = millis() + EDIT_WINDOW_MS;
+    while (millis() < deadline) {
+      if (digitalRead(PIN_BTN_PLUS) == LOW) {
+        while (digitalRead(PIN_BTN_PLUS) == LOW) delay(10);
+        lastActivityAt = millis();
+        if (found) {
+          doUpdate(+1);
+        } else {
+          doRegister(uid);
+        }
+        delay(1500);
+        lastUid = "";
+        showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
+        return;
+      }
+      if (digitalRead(PIN_BTN_MINUS) == LOW) {
+        while (digitalRead(PIN_BTN_MINUS) == LOW) delay(10);
+        break;
+      }
+      checkSleep();
+      delay(50);
+    }
   }
+
+  lastUid = "";
+  showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
 }
 
 void doUpdate(int delta) {
@@ -438,11 +525,6 @@ void handleButtons() {
       btnPlusDownAt = 0;
       if (!btnPlusHandled && held >= DEBOUNCE_MS) {
         lastActivityAt = now;
-        Serial.println("BTN+ : appui court");
-        if (!enrollMode && lastUid.length() > 0 &&
-            (now - lastReadAt < EDIT_WINDOW_MS)) {
-          doUpdate(+1);
-        }
       }
     }
   }
@@ -461,11 +543,6 @@ void handleButtons() {
       btnMinusDownAt = 0;
       if (!btnMinusHandled && held >= DEBOUNCE_MS) {
         lastActivityAt = now;
-        Serial.println("BTN- : appui court");
-        if (!enrollMode && lastUid.length() > 0 &&
-            (now - lastReadAt < EDIT_WINDOW_MS)) {
-          doUpdate(-1);
-        }
       }
     }
   }
@@ -662,12 +739,6 @@ void loop() {
 
   if (enrollMode && (millis() - enrollStartAt > ENROLL_TIMEOUT_MS)) {
     exitEnrollMode(T->enrollTimeout);
-  }
-
-  if (!enrollMode && lastUid.length() > 0 &&
-      (millis() - lastReadAt >= EDIT_WINDOW_MS)) {
-    showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
-    lastUid = "";
   }
 
   if (millis() - lastEnvSend > ENV_PERIOD_MS) {

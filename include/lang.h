@@ -41,6 +41,10 @@ struct LangStrings {
     // Actions
     const char* adding;
     const char* removing;
+    // Countdown auto-decrement
+    const char* cancelMinus;
+    const char* plusToAdd;
+    const char* minusToIgnore;
     // Alertes
     const char* alert;
     const char* pressBtnAck;

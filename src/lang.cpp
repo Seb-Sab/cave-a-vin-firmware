@@ -31,6 +31,9 @@ const LangStrings LANG_FR = {
     "Erreur API",           // apiError
     "Ajout...",             // adding
     "Retrait...",           // removing
+    "- Annuler",            // cancelMinus
+    "+ Ajouter",            // plusToAdd
+    "- Ignorer",            // minusToIgnore
     "ALERTE: ",             // alert
     "Btn pour acquitter",   // pressBtnAck
     "Mesure cave...",       // caveMeasure
@@ -70,6 +73,9 @@ const LangStrings LANG_EN = {
     "API error",            // apiError
     "Adding...",            // adding
     "Removing...",          // removing
+    "- Cancel",             // cancelMinus
+    "+ Add",                // plusToAdd
+    "- Ignore",             // minusToIgnore
     "ALERT: ",              // alert
     "Press btn to ack",     // pressBtnAck
     "Cave measure...",      // caveMeasure
@@ -109,6 +115,9 @@ const LangStrings LANG_IT = {
     "Errore API",           // apiError
     "Aggiunta...",          // adding
     "Rimozione...",         // removing
+    "- Annulla",            // cancelMinus
+    "+ Aggiungi",           // plusToAdd
+    "- Ignora",             // minusToIgnore
     "AVVISO: ",             // alert
     "Premi tasto conf.",    // pressBtnAck
     "Misura cantina...",    // caveMeasure
