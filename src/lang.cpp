@@ -39,7 +39,9 @@ const LangStrings LANG_FR = {
     "Mesure cave...",       // caveMeasure
     "Stabilisation BME:",   // bmeStab
     "Veille...",            // sleeping
-    "Mode config"           // configMode
+    "Mode config",          // configMode
+    "Token invalide !",     // tokenError
+    "Verification token..." // tokenChecking
 };
 
 const LangStrings LANG_EN = {
@@ -81,7 +83,9 @@ const LangStrings LANG_EN = {
     "Cave measure...",      // caveMeasure
     "BME stabilizing:",     // bmeStab
     "Sleeping...",          // sleeping
-    "Config mode"           // configMode
+    "Config mode",          // configMode
+    "Invalid token!",       // tokenError
+    "Checking token..."     // tokenChecking
 };
 
 const LangStrings LANG_IT = {
@@ -123,7 +127,9 @@ const LangStrings LANG_IT = {
     "Misura cantina...",    // caveMeasure
     "Stab. BME:",           // bmeStab
     "In standby...",        // sleeping
-    "Modalita' config"      // configMode
+    "Modalita' config",     // configMode
+    "Token non valido!",    // tokenError
+    "Verifica token..."     // tokenChecking
 };
 
 const LangStrings* T = &LANG_FR;

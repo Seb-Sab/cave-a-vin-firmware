@@ -55,6 +55,9 @@ struct LangStrings {
     const char* sleeping;
     // Portail
     const char* configMode;
+    // Verification token
+    const char* tokenError;
+    const char* tokenChecking;
 };
 
 extern const LangStrings LANG_FR;

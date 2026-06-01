@@ -436,6 +436,15 @@ void exitEnrollMode(const String& reason) {
   showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
 }
 
+// ============ VERIFICATION TOKEN ============
+bool verifyToken() {
+  if (settings.deviceToken.length() == 0) return false;
+  showMsg(T->tokenChecking);
+  StaticJsonDocument<128> doc;
+  if (!callApi(buildUrl("ping"), doc)) return true; // API injoignable : ne pas bloquer
+  return doc["ok"].as<bool>();
+}
+
 // ============ WIFI ============
 void setupWifi() {
   ledsOff();
@@ -702,6 +711,20 @@ void setup() {
   }
 
   setupWifi();
+
+  if (WiFi.status() == WL_CONNECTED && !verifyToken()) {
+    for (int i = 0; i < 8; i++) {
+      ledsColor(strip.Color(255, 0, 0));
+      delay(200);
+      ledsOff();
+      delay(200);
+    }
+    showMsg(T->tokenError, PORTAL_AP_SSID, "192.168.4.1");
+    delay(3000);
+    startPortal();
+    return;
+  }
+
   showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
 }
 
