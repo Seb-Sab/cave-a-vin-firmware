@@ -61,6 +61,11 @@ button{width:100%;padding:10px;border:none;border-radius:5px;cursor:pointer;font
 .btn-ota:disabled{opacity:.5;cursor:default}
 .btn-ota-update{background:#2a1a3a;color:#a876c8;border-color:#5b2f7c;margin-top:6px}
 .btn-ota-update:hover{background:#3a2a4a}
+.danger-section{border:1px solid #5a2020;background:#1a1010}
+.danger-section h2{color:#c55;border-color:#5a2020}
+.btn-reset{background:#5a1010;color:#ff9999;border:1px solid #8a3030;font-weight:bold;margin-top:8px}
+.btn-reset:hover{background:#7a1a1a}
+.danger-warn{font-size:.8em;color:#a66;margin-top:8px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -175,6 +180,13 @@ En dessous de 50% : bouchons secs. Au-dessus de 85% : risque de moisissures.</di
 <button class="btn-save" onclick="save()" data-i18n="save_btn">Enregistrer et red&eacute;marrer</button>
 <p class="msg" id="msg"></p>
 
+<section class="danger-section">
+<h2 data-i18n="reset_title">R&eacute;initialisation</h2>
+<p class="danger-warn" data-i18n="reset_warning">Efface d&eacute;finitivement WiFi, token, utilisateur et tous les r&eacute;glages. Le bo&icirc;tier red&eacute;marre en mode configuration comme lors de la premi&egrave;re utilisation.</p>
+<button class="btn-reset" onclick="doReset()" data-i18n="reset_btn">R&eacute;initialiser le bo&icirc;tier</button>
+<p class="msg" id="resetMsg"></p>
+</section>
+
 <script>
 var currentLang='fr';
 var cs='';
@@ -225,7 +237,12 @@ var i18n={
     ota_updating:'Téléchargement... Ne pas couper l\'alimentation.',
     ota_success:'✓ Mise à jour réussie. Redémarrage en cours...',
     ota_error:'Erreur',
-    ota_no_wifi:'WiFi non connecté. Si vous venez de configurer le réseau, enregistrez et redémarrez d\'abord.'
+    ota_no_wifi:'WiFi non connecté. Si vous venez de configurer le réseau, enregistrez et redémarrez d\'abord.',
+    reset_title:'Réinitialisation usine',
+    reset_warning:'Efface définitivement WiFi, token, utilisateur et tous les réglages. Le boîtier redémarre en mode configuration comme lors de la première utilisation.',
+    reset_btn:'Réinitialiser le boîtier',
+    reset_confirm:'Confirmer la réinitialisation ? Toutes les données seront effacées définitivement.',
+    reset_done:'Réinitialisation en cours... Le boîtier redémarre en mode configuration.'
   },
   en:{
     lang_title:'Language',
@@ -272,7 +289,12 @@ var i18n={
     ota_updating:'Downloading... Do not cut power.',
     ota_success:'✓ Update successful. Restarting...',
     ota_error:'Error',
-    ota_no_wifi:'WiFi not connected. If you just configured the network, save and restart first.'
+    ota_no_wifi:'WiFi not connected. If you just configured the network, save and restart first.',
+    reset_title:'Factory reset',
+    reset_warning:'Permanently erases WiFi, token, user info and all settings. The device will restart in configuration mode as if it were first use.',
+    reset_btn:'Reset device',
+    reset_confirm:'Confirm factory reset? All data will be permanently erased.',
+    reset_done:'Resetting... The device is restarting in configuration mode.'
   },
   it:{
     lang_title:'Lingua',
@@ -319,7 +341,12 @@ var i18n={
     ota_updating:'Download in corso... Non togliere alimentazione.',
     ota_success:'✓ Aggiornamento riuscito. Riavvio in corso...',
     ota_error:'Errore',
-    ota_no_wifi:'WiFi non connesso. Se hai appena configurato la rete, salva e riavvia prima.'
+    ota_no_wifi:'WiFi non connesso. Se hai appena configurato la rete, salva e riavvia prima.',
+    reset_title:'Ripristino impostazioni',
+    reset_warning:'Cancella definitivamente WiFi, token, utente e tutte le impostazioni. Il dispositivo si riavvierà in modalità configurazione come al primo utilizzo.',
+    reset_btn:'Ripristina dispositivo',
+    reset_confirm:'Confermare il ripristino? Tutti i dati saranno cancellati definitivamente.',
+    reset_done:'Ripristino in corso... Il dispositivo si riavvia in modalità configurazione.'
   }
 };
 
@@ -428,6 +455,16 @@ function applyOta(){
   }).catch(function(){
     // L'ESP32 redemmarre => connexion perdue = succes attendu
     st.style.color='#7a7';st.textContent=tr.ota_success;
+  });
+}
+
+function doReset(){
+  var tr=i18n[currentLang];
+  if(!confirm(tr.reset_confirm))return;
+  var msg=document.getElementById('resetMsg');
+  msg.style.color='#aa7';msg.textContent=tr.reset_done;
+  fetch('/reset',{method:'POST'}).catch(function(){
+    msg.style.color='#7a7';msg.textContent=tr.reset_done;
   });
 }
 
@@ -571,6 +608,14 @@ static void handleSave() {
     ESP.restart();
 }
 
+static void handleReset() {
+    server.send(200, "application/json", "{\"ok\":true}");
+    delay(300);
+    clearSettings();
+    delay(200);
+    ESP.restart();
+}
+
 static void handleNotFound() {
     server.sendHeader("Location", "http://192.168.4.1/", true);
     server.send(302, "text/plain", "");
@@ -598,6 +643,7 @@ void startPortal() {
     server.on("/save",      HTTP_POST, handleSave);
     server.on("/ota",       HTTP_GET,  handleOtaCheck);
     server.on("/ota/update",HTTP_POST, handleOtaUpdate);
+    server.on("/reset",     HTTP_POST, handleReset);
     server.onNotFound(handleNotFound);
     server.begin();
     portalActive    = true;

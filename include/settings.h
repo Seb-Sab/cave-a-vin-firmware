@@ -23,4 +23,5 @@ extern Settings settings;
 
 void loadSettings();
 void saveSettings();
+void clearSettings();
 bool hasWifiConfig();

@@ -43,6 +43,13 @@ void saveSettings() {
     p.end();
 }
 
+void clearSettings() {
+    Preferences p;
+    p.begin("cave", false);
+    p.clear();
+    p.end();
+}
+
 bool hasWifiConfig() {
     return settings.wifiSsid.length() > 0;
 }
