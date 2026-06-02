@@ -406,6 +406,13 @@ function setLang(lang){
   }
 }
 
+function rssiIcon(r){
+  if(r>=-50)return'●●●●';
+  if(r>=-65)return'●●●○';
+  if(r>=-75)return'●●○○';
+  return'●○○○';
+}
+
 function scanWifi(){
   var b=document.getElementById('scanBtn');
   b.textContent=i18n[currentLang].wifi_scan_busy;b.disabled=true;
@@ -414,7 +421,7 @@ function scanWifi(){
     s.innerHTML='';
     n.sort(function(a,b){return b.rssi-a.rssi;}).forEach(function(x){
       var o=document.createElement('option');
-      o.value=x.ssid;o.textContent=x.ssid+' ('+x.rssi+' dBm)';
+      o.value=x.ssid;o.textContent=rssiIcon(x.rssi)+' '+x.ssid+' ('+x.rssi+' dBm)';
       if(x.ssid===p)o.selected=true;
       s.appendChild(o);
     });
