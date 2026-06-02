@@ -4,6 +4,8 @@
 #include "ota.h"
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
 #include <WebServer.h>
 #include <DNSServer.h>
 #include <ArduinoJson.h>
@@ -61,6 +63,9 @@ button{width:100%;padding:10px;border:none;border-radius:5px;cursor:pointer;font
 .btn-ota:disabled{opacity:.5;cursor:default}
 .btn-ota-update{background:#2a1a3a;color:#a876c8;border-color:#5b2f7c;margin-top:6px}
 .btn-ota-update:hover{background:#3a2a4a}
+.btn-request{background:#1e2a3a;color:#7ba8c8;border:1px solid #3a6a9a;border-radius:5px;cursor:pointer;font-size:.9em;padding:8px;width:100%;margin-top:8px}
+.btn-request:hover{background:#2a3a4a}
+.btn-request:disabled{opacity:.5;cursor:default}
 .danger-section{border:1px solid #5a2020;background:#1a1010}
 .danger-section h2{color:#c55;border-color:#5a2020}
 .btn-reset{background:#5a1010;color:#ff9999;border:1px solid #8a3030;font-weight:bold;margin-top:8px}
@@ -121,6 +126,13 @@ button{width:100%;padding:10px;border:none;border-radius:5px;cursor:pointer;font
 <label data-i18n="user_token">Token device</label>
 <input type="text" id="devToken" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
 <p class="hint" data-i18n="user_token_hint">Identifiant unique de cette cave dans la base de donn&eacute;es.</p>
+</section>
+
+<section id="requestSection" style="display:none">
+<h2 data-i18n="request_title">Demande d&apos;activation</h2>
+<p class="hint" data-i18n="request_hint">Pas encore de token ? Remplissez vos informations ci-dessus puis envoyez une demande. L&apos;administrateur vous enverra votre token par email.</p>
+<button class="btn-request" id="requestBtn" onclick="requestActivation()" data-i18n="request_btn">Demander l&apos;activation</button>
+<p class="msg" id="requestMsg"></p>
 </section>
 
 <section>
@@ -242,7 +254,15 @@ var i18n={
     reset_warning:'Efface définitivement WiFi, token, utilisateur et tous les réglages. Le boîtier redémarre en mode configuration comme lors de la première utilisation.',
     reset_btn:'Réinitialiser le boîtier',
     reset_confirm:'Confirmer la réinitialisation ? Toutes les données seront effacées définitivement.',
-    reset_done:'Réinitialisation en cours... Le boîtier redémarre en mode configuration.'
+    reset_done:'Réinitialisation en cours... Le boîtier redémarre en mode configuration.',
+    request_title:"Demande d'activation",
+    request_hint:"Pas encore de token ? Remplissez vos informations ci-dessus puis envoyez une demande. L'administrateur vous enverra votre token par email.",
+    request_btn:"Demander l'activation",
+    request_sending:'Envoi en cours...',
+    request_sent:'✓ Demande envoyée ! Vous recevrez votre token par email.',
+    request_error:"Erreur lors de l'envoi",
+    request_no_wifi:'Enregistrez d\'abord vos identifiants WiFi.',
+    request_fill:'Remplissez Nom, Prénom et Email.'
   },
   en:{
     lang_title:'Language',
@@ -294,7 +314,15 @@ var i18n={
     reset_warning:'Permanently erases WiFi, token, user info and all settings. The device will restart in configuration mode as if it were first use.',
     reset_btn:'Reset device',
     reset_confirm:'Confirm factory reset? All data will be permanently erased.',
-    reset_done:'Resetting... The device is restarting in configuration mode.'
+    reset_done:'Resetting... The device is restarting in configuration mode.',
+    request_title:'Activation request',
+    request_hint:'No token yet? Fill in your details above and send a request. The administrator will send you your token by email.',
+    request_btn:'Request activation',
+    request_sending:'Sending...',
+    request_sent:'✓ Request sent! You will receive your token by email.',
+    request_error:'Error sending request',
+    request_no_wifi:'Save your WiFi credentials first.',
+    request_fill:'Fill in Name, First name and Email.'
   },
   it:{
     lang_title:'Lingua',
@@ -346,7 +374,15 @@ var i18n={
     reset_warning:'Cancella definitivamente WiFi, token, utente e tutte le impostazioni. Il dispositivo si riavvierà in modalità configurazione come al primo utilizzo.',
     reset_btn:'Ripristina dispositivo',
     reset_confirm:'Confermare il ripristino? Tutti i dati saranno cancellati definitivamente.',
-    reset_done:'Ripristino in corso... Il dispositivo si riavvia in modalità configurazione.'
+    reset_done:'Ripristino in corso... Il dispositivo si riavvia in modalità configurazione.',
+    request_title:'Richiesta di attivazione',
+    request_hint:"Nessun token? Compila i tuoi dati qui sopra e invia una richiesta. L'amministratore ti invierà il token via email.",
+    request_btn:'Richiedi attivazione',
+    request_sending:'Invio in corso...',
+    request_sent:'✓ Richiesta inviata! Riceverai il tuo token via email.',
+    request_error:"Errore durante l'invio",
+    request_no_wifi:'Salva prima le credenziali WiFi.',
+    request_fill:'Compila Nome, Cognome ed Email.'
   }
 };
 
@@ -410,6 +446,7 @@ fetch('/config').then(function(r){return r.json();}).then(function(c){
   var keys=['ldrThr','darkS','inactM','tMin','tMax','hMin','hMax'];
   keys.forEach(function(k){if(c[k]!=null)document.getElementById(k).value=c[k];});
   if(c.version)document.getElementById('otaCurrent').textContent=c.version;
+  if(!c.devToken){document.getElementById('requestSection').style.display='';}
   setLang(c.lang||'fr');
 });
 
@@ -456,6 +493,26 @@ function applyOta(){
     // L'ESP32 redemmarre => connexion perdue = succes attendu
     st.style.color='#7a7';st.textContent=tr.ota_success;
   });
+}
+
+function requestActivation(){
+  var tr=i18n[currentLang];
+  var nom=document.getElementById('nom').value.trim();
+  var prenom=document.getElementById('prenom').value.trim();
+  var email=document.getElementById('email').value.trim();
+  var msg=document.getElementById('requestMsg');
+  if(!nom||!prenom||!email){msg.style.color='#a44';msg.textContent=tr.request_fill;return;}
+  var btn=document.getElementById('requestBtn');
+  btn.disabled=true;
+  msg.style.color='#aaa';msg.textContent=tr.request_sending;
+  fetch('/request',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({nom:nom,prenom:prenom,email:email})
+  }).then(function(r){return r.json();}).then(function(d){
+    btn.disabled=false;
+    if(d.ok){msg.style.color='#7a7';msg.textContent=tr.request_sent;}
+    else if(d.error==='no_wifi'){msg.style.color='#aa7';msg.textContent=tr.request_no_wifi;}
+    else{msg.style.color='#a44';msg.textContent=tr.request_error+(d.error?': '+d.error:'');}
+  }).catch(function(){btn.disabled=false;msg.style.color='#a44';msg.textContent=tr.request_error;});
 }
 
 function doReset(){
@@ -608,6 +665,45 @@ static void handleSave() {
     ESP.restart();
 }
 
+static void handleRequest() {
+    if (WiFi.status() != WL_CONNECTED) {
+        server.send(200, "application/json", "{\"ok\":false,\"error\":\"no_wifi\"}");
+        return;
+    }
+    String body = server.arg("plain");
+    StaticJsonDocument<256> inDoc;
+    if (deserializeJson(inDoc, body)) {
+        server.send(400, "application/json", "{\"ok\":false,\"error\":\"JSON invalide\"}");
+        return;
+    }
+    String nom    = inDoc["nom"]    | "";
+    String prenom = inDoc["prenom"] | "";
+    String email  = inDoc["email"]  | "";
+    if (nom.isEmpty() || prenom.isEmpty() || email.isEmpty()) {
+        server.send(200, "application/json", "{\"ok\":false,\"error\":\"champs manquants\"}");
+        return;
+    }
+    WiFiClientSecure client; client.setInsecure();
+    HTTPClient http;
+    String url = String(SUPABASE_URL) + "?action=request";
+    http.begin(client, url);
+    http.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+    http.setTimeout(15000);
+    http.addHeader("Authorization", "Bearer " + String(SUPABASE_ANON_KEY));
+    http.addHeader("Content-Type", "application/json");
+    StaticJsonDocument<256> outDoc;
+    outDoc["nom"] = nom; outDoc["prenom"] = prenom; outDoc["email"] = email;
+    String outBody; serializeJson(outDoc, outBody);
+    int code = http.POST(outBody);
+    String response = (code == 200) ? http.getString() : "";
+    http.end();
+    if (response.isEmpty()) {
+        server.send(200, "application/json", "{\"ok\":false,\"error\":\"API injoignable\"}");
+        return;
+    }
+    server.send(200, "application/json", response);
+}
+
 static void handleReset() {
     server.send(200, "application/json", "{\"ok\":true}");
     delay(300);
@@ -644,6 +740,7 @@ void startPortal() {
     server.on("/ota",       HTTP_GET,  handleOtaCheck);
     server.on("/ota/update",HTTP_POST, handleOtaUpdate);
     server.on("/reset",     HTTP_POST, handleReset);
+    server.on("/request",   HTTP_POST, handleRequest);
     server.onNotFound(handleNotFound);
     server.begin();
     portalActive    = true;
