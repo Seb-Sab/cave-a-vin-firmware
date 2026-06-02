@@ -475,6 +475,10 @@ void applyBtnOverlay() {
 }
 
 void redrawCurrentScreen() {
+  if (isPortalActive()) {
+    showMsg(T->configMode, PORTAL_AP_SSID, "192.168.4.1");
+    return;
+  }
   if (enrollMode) {
     showEnroll();
   } else if (lastUid.length() > 0 && (millis() - lastReadAt < EDIT_WINDOW_MS)) {
@@ -734,6 +738,7 @@ void loop() {
     if (isPortalMsgNeeded())
       showMsg(T->configMode, PORTAL_AP_SSID, "192.168.4.1");
     handlePortal();
+    updateBtnVisual();
     return;
   }
 
