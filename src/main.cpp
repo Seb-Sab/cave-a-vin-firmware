@@ -20,6 +20,7 @@
 #include <Adafruit_PN532.h>
 #include <Adafruit_NeoPixel.h>
 
+#include <functional>
 #include "config.h"
 #include "settings.h"
 #include "portal.h"
@@ -76,6 +77,7 @@ void   doTimerMeasure();
 void   handleButtons();
 void   applyBtnOverlay();
 void   redrawCurrentScreen();
+void   setScreenRedraw(std::function<void()> fn);
 void   updateBtnVisual();
 void   checkSleep();
 void   goToSleep();
@@ -271,6 +273,10 @@ void doLookup(const String& uid) {
     unsigned long deadline = millis() + EDIT_WINDOW_MS;
     int lastSec = -1;
     bool doDecrement = true;
+    setScreenRedraw([&]() {
+      int s = max(0, (int)((deadline - millis() + 999) / 1000));
+      showWineCountdown(lastName, lastMillesime, lastQty, s);
+    });
     while (millis() < deadline) {
       int sec = (int)((deadline - millis() + 999) / 1000);
       if (sec != lastSec) {
@@ -285,15 +291,18 @@ void doLookup(const String& uid) {
       if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) {
         while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) delay(10);
         lastActivityAt = millis();
+        setScreenRedraw(nullptr);
         doUpdate(+1);
         delay(1500);
         lastUid = "";
         showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
         return;
       }
+      updateBtnVisual();
       checkSleep();
       delay(50);
     }
+    setScreenRedraw(nullptr);
     if (doDecrement) {
       lastActivityAt = millis();
       doUpdate(-1);
@@ -309,10 +318,15 @@ void doLookup(const String& uid) {
       showMsg(T->notRegistered, T->plusToAdd, T->minusToIgnore);
     }
     unsigned long deadline = millis() + EDIT_WINDOW_MS;
+    setScreenRedraw([&]() {
+      if (found) showMsg(lastName, T->plusToAdd, T->minusToIgnore);
+      else       showMsg(T->notRegistered, T->plusToAdd, T->minusToIgnore);
+    });
     while (millis() < deadline) {
       if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) {
         while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) delay(10);
         lastActivityAt = millis();
+        setScreenRedraw(nullptr);
         if (found) {
           doUpdate(+1);
         } else {
@@ -327,9 +341,11 @@ void doLookup(const String& uid) {
         while (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) delay(10);
         break;
       }
+      updateBtnVisual();
       checkSleep();
       delay(50);
     }
+    setScreenRedraw(nullptr);
   }
 
   lastUid = "";
@@ -405,9 +421,10 @@ void sendEnvironment() {
   if (h < settings.humMin  || h > settings.humMax)  alertMsg += "humidite";
   if (alertMsg.length() > 0) {
     ledsFlash(strip.Color(255, 100, 0), 4);
-    showMsg(String(T->alert) + alertMsg,
-            "T=" + String(t, 1) + "C  H=" + String(h, 0) + "%",
-            T->pressBtnAck);
+    String l1 = String(T->alert) + alertMsg;
+    String l2 = "T=" + String(t, 1) + "C  H=" + String(h, 0) + "%";
+    showMsg(l1, l2, T->pressBtnAck);
+    setScreenRedraw([&]() { showMsg(l1, l2, T->pressBtnAck); });
     while (true) {
       if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD || touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
         while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD || touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD)
@@ -415,9 +432,11 @@ void sendEnvironment() {
         lastActivityAt = millis();
         break;
       }
+      updateBtnVisual();
       checkSleep();
       delay(50);
     }
+    setScreenRedraw(nullptr);
     redrawCurrentScreen();
   }
 }
@@ -524,6 +543,14 @@ void redrawCurrentScreen() {
   }
 }
 
+// Redraw contextuel : chaque boucle bloquante pose son propre callback via
+// setScreenRedraw() avant d'entrer et passe nullptr en sortant.
+// updateBtnVisual() appelle ce callback a la place de redrawCurrentScreen(),
+// ce qui garantit que les barres boutons s'actualisent avec le bon ecran.
+static std::function<void()> screenRedrawFn = nullptr;
+
+void setScreenRedraw(std::function<void()> fn) { screenRedrawFn = fn; }
+
 void updateBtnVisual() {
   static bool wasPlusActive  = false;
   static bool wasMinusActive = false;
@@ -532,7 +559,8 @@ void updateBtnVisual() {
   if (plusActive != wasPlusActive || minusActive != wasMinusActive) {
     wasPlusActive  = plusActive;
     wasMinusActive = minusActive;
-    redrawCurrentScreen();
+    if (screenRedrawFn) screenRedrawFn();
+    else redrawCurrentScreen();
   }
 }
 
