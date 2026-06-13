@@ -278,6 +278,7 @@ void doLookup(const String& uid) {
       showWineCountdown(lastName, lastMillesime, lastQty, s);
     });
     while (millis() < deadline) {
+      updateBtnVisual();
       int sec = (int)((deadline - millis() + 999) / 1000);
       if (sec != lastSec) {
         lastSec = sec;
@@ -298,7 +299,6 @@ void doLookup(const String& uid) {
         showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
         return;
       }
-      updateBtnVisual();
       checkSleep();
       delay(50);
     }
@@ -323,6 +323,7 @@ void doLookup(const String& uid) {
       else       showMsg(T->notRegistered, T->plusToAdd, T->minusToIgnore);
     });
     while (millis() < deadline) {
+      updateBtnVisual();
       if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) {
         while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) delay(10);
         lastActivityAt = millis();
@@ -341,7 +342,6 @@ void doLookup(const String& uid) {
         while (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) delay(10);
         break;
       }
-      updateBtnVisual();
       checkSleep();
       delay(50);
     }
@@ -426,13 +426,13 @@ void sendEnvironment() {
     showMsg(l1, l2, T->pressBtnAck);
     setScreenRedraw([&]() { showMsg(l1, l2, T->pressBtnAck); });
     while (true) {
+      updateBtnVisual();
       if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD || touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
         while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD || touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD)
           delay(10);
         lastActivityAt = millis();
         break;
       }
-      updateBtnVisual();
       checkSleep();
       delay(50);
     }
