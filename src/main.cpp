@@ -675,7 +675,7 @@ void setup() {
   else if (cause == ESP_SLEEP_WAKEUP_TIMER)     Serial.println("Reveil par timer");
 
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
-  Wire.setTimeOut(10);
+  Wire.setTimeOut(50);
 
   Serial.println("Scan I2C...");
   for (byte addr = 1; addr < 127; addr++) {
@@ -691,6 +691,14 @@ void setup() {
   oled.display();
   showMsg(T->appName, T->initializing);
 
+  // Lire le chip ID avant begin() : 0x60=BME280, 0x58=BMP280
+  Wire.beginTransmission(0x76);
+  Wire.write(0xD0);
+  Wire.endTransmission(false);
+  Wire.requestFrom((uint8_t)0x76, (uint8_t)1);
+  uint8_t chipId = Wire.available() ? Wire.read() : 0;
+  Serial.printf("BME chip ID: 0x%02X (%s)\n", chipId,
+    chipId == 0x60 ? "BME280 OK" : chipId == 0x58 ? "BMP280!" : "inconnu");
   bmeOk = bme.begin(0x76) || bme.begin(0x77);
   if (!bmeOk) Serial.println("BME280 absent");
 
