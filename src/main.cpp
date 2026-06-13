@@ -120,13 +120,23 @@ void updateLeds() {
   last = millis();
 
   float val = (sinf(angle) + 1.0f) * 0.5f;
-  uint8_t b  = (uint8_t)(val * 80.0f + 10.0f);
-  uint32_t color = enrollMode
-    ? strip.Color(b / 2, 0, b)
-    : strip.Color(0, 0, b);
+  uint32_t color;
+  float increment;
+  if (isPortalActive()) {
+    uint8_t r = (uint8_t)(val * 200.0f + 55.0f); // rouge vif 55-255
+    color     = strip.Color(r, 0, 0);
+    increment = 0.18f; // scintillement rapide (~3x)
+  } else if (enrollMode) {
+    uint8_t b = (uint8_t)(val * 80.0f + 10.0f);
+    color     = strip.Color(b / 2, 0, b);
+    increment = 0.06f;
+  } else {
+    uint8_t b = (uint8_t)(val * 80.0f + 10.0f);
+    color     = strip.Color(0, 0, b);
+    increment = 0.06f;
+  }
   ledsColor(color);
-
-  angle += 0.06f;
+  angle += increment;
   if (angle > 6.2832f) angle -= 6.2832f;
 }
 
@@ -808,6 +818,7 @@ void loop() {
     if (isPortalMsgNeeded())
       showMsg(T->configMode, PORTAL_AP_SSID, "192.168.4.1");
     handlePortal();
+    updateLeds();
     updateBtnVisual();
     return;
   }
