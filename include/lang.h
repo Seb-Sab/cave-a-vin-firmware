@@ -67,6 +67,9 @@ struct LangStrings {
     const char* linkAssociate;
     const char* linkDone;
     const char* linkNone;
+    const char* linkTitle;
+    const char* linkNavHelp;
+    const char* linkLongHelp;
 };
 
 extern const LangStrings LANG_FR;

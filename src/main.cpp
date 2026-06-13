@@ -258,11 +258,13 @@ void showWineCountdown(const String& name, const String& millesime, int qty, int
 }
 
 // Appele quand une etiquette inconnue est acceptee par l'utilisateur.
-// Cherche le premier vin sans UID en base : si trouve, propose de l'associer.
-// Sinon (ou si l'utilisateur refuse), lance l'enregistrement classique.
+// Charge tous les vins sans UID et propose un defilement :
+//   appui court +/- : vin suivant/precedent
+//   appui long  +   : associer l'UID a ce vin
+//   appui long  -   : annuler et basculer vers doRegister()
 void doLinkOrRegister(const String& uid) {
   showMsg(T->searching, "");
-  StaticJsonDocument<512> doc;
+  DynamicJsonDocument doc(4096);
   if (!callApi(buildUrl("unlinked"), doc) || !doc["ok"].as<bool>()) {
     doRegister(uid);
     return;
@@ -274,31 +276,71 @@ void doLinkOrRegister(const String& uid) {
     return;
   }
 
-  String nom      = String((const char*)(doc["nom"] | "?"));
-  String mill     = doc["millesime"].isNull() ? String("") : String(doc["millesime"].as<int>());
-  int    qte      = doc["qte"] | 0;
-  int    wineId   = doc["id"]  | 0;
-  String line2    = mill + (mill.length() ? "  " : "") + String(T->qty) + String(qte);
-  String line3    = String(T->linkAssociate) + "  " + String(T->cancelMinus);
+  JsonArray wines = doc["wines"].as<JsonArray>();
+  int count = (int)wines.size();
+  if (count == 0) { doRegister(uid); return; }
 
+  // Ecran d'aide bref (1.5s)
   ledsFlash(strip.Color(0, 200, 255), 2);
-  showMsg(nom, line2, line3);
+  showMsg(T->linkTitle, T->linkNavHelp, T->linkLongHelp);
+  delay(1500);
 
-  setScreenRedraw([&]() { showMsg(nom, line2, line3); });
-  bool doLink = false;
-  while (true) {
+  // Variables de cache pour le redraw des barres boutons
+  int    idx = 0;
+  String curNom, curLine2, curLine3;
+
+  auto refresh = [&]() {
+    JsonObject w = wines[idx];
+    curNom  = String((const char*)(w["nom"] | "?"));
+    String mill = w["millesime"].isNull() ? String("") : String(w["millesime"].as<int>());
+    String cont = String((const char*)(w["contenant"] | ""));
+    curLine2 = mill + (mill.length() && cont.length() ? " " : "") + cont;
+    curLine3 = "[" + String(idx + 1) + "/" + String(count) + "]  "
+             + String(T->qty) + String(w["qte"] | 0);
+    showMsg(curNom, curLine2, curLine3);
+  };
+
+  refresh();
+  setScreenRedraw([&]() { showMsg(curNom, curLine2, curLine3); });
+
+  // Detection appui court / long sur chaque bouton (action sur relachement)
+  unsigned long plusDownAt  = 0;
+  unsigned long minusDownAt = 0;
+  bool plusWas  = false;
+  bool minusWas = false;
+  bool done     = false;
+  bool doLink   = false;
+
+  while (!done) {
     updateBtnVisual();
-    if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) {
-      while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) delay(10);
-      doLink = true;
-      break;
+    bool plusNow  = touchRead(PIN_BTN_PLUS)  < TOUCH_THRESHOLD;
+    bool minusNow = touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD;
+    unsigned long now = millis();
+
+    if (plusNow  && !plusWas)  plusDownAt  = now;
+    if (minusNow && !minusWas) minusDownAt = now;
+
+    if (!plusNow && plusWas) {
+      if (now - plusDownAt >= LONGPRESS_MS) {
+        doLink = true; done = true;           // long + = associer
+      } else {
+        idx = (idx + 1) % count;             // court + = suivant
+        refresh();
+      }
     }
-    if (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
-      while (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) delay(10);
-      break;
+    if (!minusNow && minusWas) {
+      if (now - minusDownAt >= LONGPRESS_MS) {
+        done = true;                          // long - = sortir
+      } else {
+        idx = (idx - 1 + count) % count;    // court - = precedent
+        refresh();
+      }
     }
+
+    plusWas  = plusNow;
+    minusWas = minusNow;
     checkSleep();
-    delay(50);
+    delay(30);
   }
   setScreenRedraw(nullptr);
 
@@ -309,8 +351,12 @@ void doLinkOrRegister(const String& uid) {
     return;
   }
 
+  // Association
+  String nom   = String((const char*)(wines[idx]["nom"] | "?"));
+  int    wineId = wines[idx]["id"] | 0;
+
   showMsg(T->sending, nom);
-  StaticJsonDocument<256> linkDoc;
+  DynamicJsonDocument linkDoc(256);
   if (!callApi(buildUrl("link", "uid=" + uid + "&id=" + String(wineId)), linkDoc)
       || !linkDoc["ok"].as<bool>()) {
     showMsg(T->apiError, linkDoc["error"] | "");

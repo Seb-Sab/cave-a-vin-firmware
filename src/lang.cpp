@@ -48,7 +48,10 @@ const LangStrings LANG_FR = {
     "+ Mettre a jour",     // otaUpdate
     "+ Associer",          // linkAssociate
     "Associe !",           // linkDone
-    "Aucun vin sans UID"   // linkNone
+    "Aucun vin sans UID",  // linkNone
+    "Assoc. etiquette",    // linkTitle
+    "+/- defiler",         // linkNavHelp
+    "+l=OK  -l=sortir"     // linkLongHelp
 };
 
 const LangStrings LANG_EN = {
@@ -99,7 +102,10 @@ const LangStrings LANG_EN = {
     "+ Update now",        // otaUpdate
     "+ Link",              // linkAssociate
     "Linked!",             // linkDone
-    "No wine w/o UID"      // linkNone
+    "No wine w/o UID",     // linkNone
+    "Link label",          // linkTitle
+    "+/- browse",          // linkNavHelp
+    "+l=OK  -l=quit"       // linkLongHelp
 };
 
 const LangStrings LANG_IT = {
@@ -150,7 +156,10 @@ const LangStrings LANG_IT = {
     "+ Aggiorna ora",      // otaUpdate
     "+ Associa",           // linkAssociate
     "Associato!",          // linkDone
-    "Nessun vino lib."     // linkNone
+    "Nessun vino lib.",    // linkNone
+    "Assoc. etichetta",    // linkTitle
+    "+/- sfoglia",         // linkNavHelp
+    "+l=OK  -l=esci"       // linkLongHelp
 };
 
 const LangStrings* T = &LANG_FR;
