@@ -387,15 +387,18 @@ void doRegister(const String& uid) {
 }
 
 void sendEnvironment() {
-  if (!bmeOk) return;
+  if (!bmeOk) { Serial.println("sendEnv: BME absent, abandon"); return; }
   float t = bme.readTemperature();
   float h = bme.readHumidity();
   float p = bme.readPressure() / 100.0f;
+  Serial.printf("sendEnv: T=%.1f H=%.1f P=%.1f\n", t, h, p);
   String params = "t=" + String(t, 1) +
                   "&h=" + String(h, 1) +
                   "&p=" + String(p, 1);
   StaticJsonDocument<256> doc;
-  callApi(buildUrl("env", params), doc);
+  bool ok = callApi(buildUrl("env", params), doc);
+  if (ok) Serial.printf("sendEnv: ok=%d\n", doc["ok"].as<bool>());
+  else    Serial.println("sendEnv: API injoignable ou reponse vide");
 
   String alertMsg = "";
   if (t < settings.tempMin || t > settings.tempMax) alertMsg += "temperature ";
