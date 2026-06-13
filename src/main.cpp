@@ -729,6 +729,7 @@ void setup() {
     return;
   }
 
+  sendEnvironment();
   showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
 }
 
