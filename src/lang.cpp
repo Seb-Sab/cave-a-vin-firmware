@@ -42,7 +42,10 @@ const LangStrings LANG_FR = {
     "Mode config",          // configMode
     "Token invalide !",     // tokenError
     "Verification token...", // tokenChecking
-    "Mise a jour..."        // otaUpdating
+    "Mise a jour...",       // otaUpdating
+    "Verif. mise a jour",  // otaChecking
+    "MAJ disponible !",    // otaAvailable
+    "+ Mettre a jour"      // otaUpdate
 };
 
 const LangStrings LANG_EN = {
@@ -87,7 +90,10 @@ const LangStrings LANG_EN = {
     "Config mode",          // configMode
     "Invalid token!",       // tokenError
     "Checking token...",    // tokenChecking
-    "Updating..."           // otaUpdating
+    "Updating...",          // otaUpdating
+    "Checking update...",  // otaChecking
+    "Update available!",   // otaAvailable
+    "+ Update now"         // otaUpdate
 };
 
 const LangStrings LANG_IT = {
@@ -132,7 +138,10 @@ const LangStrings LANG_IT = {
     "Modalita' config",     // configMode
     "Token non valido!",    // tokenError
     "Verifica token...",    // tokenChecking
-    "Aggiornamento..."      // otaUpdating
+    "Aggiornamento...",     // otaUpdating
+    "Verifica aggiorn.",   // otaChecking
+    "Aggiorn. disponib!",  // otaAvailable
+    "+ Aggiorna ora"       // otaUpdate
 };
 
 const LangStrings* T = &LANG_FR;

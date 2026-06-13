@@ -24,6 +24,7 @@
 #include "config.h"
 #include "settings.h"
 #include "portal.h"
+#include "ota.h"
 #include "lang.h"
 
 // ============ OBJETS GLOBAUX ============
@@ -806,6 +807,40 @@ void setup() {
     delay(3000);
     startPortal();
     return;
+  }
+
+  // Vérification OTA uniquement au cold start (pas lors des réveils deep sleep)
+  if (cause == ESP_SLEEP_WAKEUP_UNDEFINED && WiFi.status() == WL_CONNECTED) {
+    showMsg(T->otaChecking, FIRMWARE_VERSION, "");
+    OtaStatus ota = checkOtaUpdate();
+    if (ota.updateAvailable) {
+      ledsFlash(strip.Color(0, 200, 255), 2);
+      String line3 = String(T->otaUpdate) + "  " + T->minusToIgnore;
+      showMsg(T->otaAvailable, ota.latestVersion, line3);
+      unsigned long deadline = millis() + 30000UL; // 30s timeout
+      setScreenRedraw([&]() { showMsg(T->otaAvailable, ota.latestVersion, line3); });
+      bool doOta = false;
+      while (millis() < deadline) {
+        updateBtnVisual();
+        if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) {
+          while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) delay(10);
+          doOta = true;
+          break;
+        }
+        if (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
+          while (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) delay(10);
+          break;
+        }
+        delay(50);
+      }
+      setScreenRedraw(nullptr);
+      if (doOta) {
+        applyOtaUpdate(ota.downloadUrl,
+                       []() { showOtaProgress(0, 1); },
+                       [](int cur, int total) { showOtaProgress(cur, total); });
+        // Si on arrive ici : echec OTA, on continue normalement
+      }
+    }
   }
 
   sendEnvironment();

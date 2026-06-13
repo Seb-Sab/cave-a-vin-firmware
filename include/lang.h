@@ -60,6 +60,9 @@ struct LangStrings {
     const char* tokenChecking;
     // OTA
     const char* otaUpdating;
+    const char* otaChecking;
+    const char* otaAvailable;
+    const char* otaUpdate;
 };
 
 extern const LangStrings LANG_FR;
