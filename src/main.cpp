@@ -16,7 +16,7 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
-#include <Adafruit_BME280.h>
+#include <Adafruit_BMP280.h>
 #include <Adafruit_PN532.h>
 #include <Adafruit_NeoPixel.h>
 
@@ -28,7 +28,7 @@
 // ============ OBJETS GLOBAUX ============
 Adafruit_SH1106G    oled(OLED_WIDTH, OLED_HEIGHT, &Wire, -1);
 Adafruit_PN532      nfc(-1, -1);
-Adafruit_BME280     bme;
+Adafruit_BMP280     bme;
 Adafruit_NeoPixel   strip(LED_COUNT, PIN_LED_STRIP, NEO_GRB + NEO_KHZ800);
 
 bool bmeOk = false;
@@ -387,13 +387,12 @@ void doRegister(const String& uid) {
 }
 
 void sendEnvironment() {
-  if (!bmeOk) { Serial.println("sendEnv: BME absent, abandon"); return; }
+  if (!bmeOk) { Serial.println("sendEnv: BMP absent, abandon"); return; }
   float t = bme.readTemperature();
-  float h = bme.readHumidity();
   float p = bme.readPressure() / 100.0f;
-  Serial.printf("sendEnv: T=%.1f H=%.1f P=%.1f\n", t, h, p);
+  Serial.printf("sendEnv: T=%.1f P=%.1f (BMP280, pas d'humidite)\n", t, p);
   String params = "t=" + String(t, 1) +
-                  "&h=" + String(h, 1) +
+                  "&h=0" +
                   "&p=" + String(p, 1);
   StaticJsonDocument<256> doc;
   bool ok = callApi(buildUrl("env", params), doc);
@@ -402,7 +401,7 @@ void sendEnvironment() {
 
   String alertMsg = "";
   if (t < settings.tempMin || t > settings.tempMax) alertMsg += "temperature ";
-  if (h < settings.humMin  || h > settings.humMax)  alertMsg += "humidite";
+  // Pas d'alarme humidite : module BMP280 sans capteur humidite
   if (alertMsg.length() > 0) {
     ledsFlash(strip.Color(255, 100, 0), 4);
     showMsg(String(T->alert) + alertMsg,
@@ -700,7 +699,7 @@ void setup() {
   Serial.printf("BME chip ID: 0x%02X (%s)\n", chipId,
     chipId == 0x60 ? "BME280 OK" : chipId == 0x58 ? "BMP280!" : "inconnu");
   bmeOk = bme.begin(0x76) || bme.begin(0x77);
-  if (!bmeOk) Serial.println("BME280 absent");
+  if (!bmeOk) Serial.println("BMP280 absent");
 
   if (cause == ESP_SLEEP_WAKEUP_TIMER) {
     doTimerMeasure();
