@@ -58,6 +58,8 @@ struct LangStrings {
     // Verification token
     const char* tokenError;
     const char* tokenChecking;
+    // OTA
+    const char* otaUpdating;
 };
 
 extern const LangStrings LANG_FR;

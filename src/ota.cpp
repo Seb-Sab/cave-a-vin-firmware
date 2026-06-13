@@ -60,12 +60,17 @@ OtaStatus checkOtaUpdate() {
 }
 
 // Telecharge et applique le firmware — l'ESP32 redemmarre automatiquement
-bool applyOtaUpdate(const String& url) {
+bool applyOtaUpdate(const String& url,
+                    std::function<void()>        onStart,
+                    std::function<void(int,int)> onProgress) {
     WiFiClientSecure client;
     client.setInsecure();
 
     httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
     httpUpdate.rebootOnUpdate(true);
+
+    if (onStart)    httpUpdate.onStart(onStart);
+    if (onProgress) httpUpdate.onProgress(onProgress);
 
     t_httpUpdate_return ret = httpUpdate.update(client, url);
     // Si on arrive ici, c'est une erreur (le succes provoque un reboot)

@@ -469,6 +469,38 @@ void setupWifi() {
   delay(1200);
 }
 
+// ============ OTA PROGRESS ============
+void showOtaProgress(int cur, int total) {
+  int pct = (total > 0) ? (cur * 100 / total) : 0;
+
+  oled.clearDisplay();
+  oled.setTextColor(SH110X_WHITE);
+  oled.setTextSize(1);
+  oled.setCursor(0, 0);
+  oled.println(T->otaUpdating);
+  oled.setCursor(0, 14);
+  oled.println(FIRMWARE_VERSION);
+
+  // Barre de progression
+  oled.drawRect(0, 30, 128, 12, SH110X_WHITE);
+  oled.fillRect(0, 30, pct * 128 / 100, 12, SH110X_WHITE);
+
+  // Pourcentage
+  oled.setTextSize(1);
+  oled.setCursor(54, 48);
+  oled.print(pct);
+  oled.print("%");
+  oled.display();
+
+  // LEDs : remplissage progressif bleu -> vert
+  int lit = pct * LED_COUNT / 100;
+  for (int i = 0; i < LED_COUNT; i++) {
+    if (i < lit) strip.setPixelColor(i, strip.Color(0, 180, 80));
+    else         strip.setPixelColor(i, strip.Color(0, 0, 20));
+  }
+  strip.show();
+}
+
 // ============ VISUEL BOUTONS OLED ============
 void applyBtnOverlay() {
   if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD)
@@ -711,6 +743,12 @@ void setup() {
   }
 
   lastActivityAt = millis();
+
+  // Enregistrer les callbacks OTA pour l'affichage de progression
+  setOtaCallbacks(
+    []() { showOtaProgress(0, 1); },          // onStart : affiche 0%
+    [](int cur, int total) { showOtaProgress(cur, total); }
+  );
 
   if (!hasWifiConfig()) {
     startPortal();

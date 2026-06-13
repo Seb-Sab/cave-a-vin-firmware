@@ -16,6 +16,14 @@ static bool      portalActive    = false;
 static bool      portalMsgNeeded = false;
 static OtaStatus lastOta;
 
+static std::function<void()>        otaStartCb    = nullptr;
+static std::function<void(int,int)> otaProgressCb = nullptr;
+
+void setOtaCallbacks(std::function<void()> onStart, std::function<void(int,int)> onProgress) {
+    otaStartCb    = onStart;
+    otaProgressCb = onProgress;
+}
+
 // ---- Page HTML embarquee ----
 static const char HTML_PAGE[] = R"rawhtml(
 <!DOCTYPE html>
@@ -619,7 +627,7 @@ static void handleOtaUpdate() {
     }
     server.send(200, "application/json", "{\"ok\":true}");
     delay(200);
-    applyOtaUpdate(lastOta.downloadUrl);
+    applyOtaUpdate(lastOta.downloadUrl, otaStartCb, otaProgressCb);
 }
 
 static void handleConfig() {
