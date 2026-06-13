@@ -71,6 +71,7 @@ bool   callApi(const String& url, JsonDocument& doc);
 void   doLookup(const String& uid);
 void   doUpdate(int delta);
 void   doRegister(const String& uid);
+void   doLinkOrRegister(const String& uid);
 void   sendEnvironment();
 void   enterEnrollMode();
 void   exitEnrollMode(const String& reason = "");
@@ -256,6 +257,73 @@ void showWineCountdown(const String& name, const String& millesime, int qty, int
   oled.display();
 }
 
+// Appele quand une etiquette inconnue est acceptee par l'utilisateur.
+// Cherche le premier vin sans UID en base : si trouve, propose de l'associer.
+// Sinon (ou si l'utilisateur refuse), lance l'enregistrement classique.
+void doLinkOrRegister(const String& uid) {
+  showMsg(T->searching, "");
+  StaticJsonDocument<512> doc;
+  if (!callApi(buildUrl("unlinked"), doc) || !doc["ok"].as<bool>()) {
+    doRegister(uid);
+    return;
+  }
+  if (!doc["found"].as<bool>()) {
+    showMsg(T->linkNone, "");
+    delay(1500);
+    doRegister(uid);
+    return;
+  }
+
+  String nom      = String((const char*)(doc["nom"] | "?"));
+  String mill     = doc["millesime"].isNull() ? String("") : String(doc["millesime"].as<int>());
+  int    qte      = doc["qte"] | 0;
+  int    wineId   = doc["id"]  | 0;
+  String line2    = mill + (mill.length() ? "  " : "") + String(T->qty) + String(qte);
+  String line3    = String(T->linkAssociate) + "  " + String(T->cancelMinus);
+
+  ledsFlash(strip.Color(0, 200, 255), 2);
+  showMsg(nom, line2, line3);
+
+  setScreenRedraw([&]() { showMsg(nom, line2, line3); });
+  bool doLink = false;
+  while (true) {
+    updateBtnVisual();
+    if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) {
+      while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) delay(10);
+      doLink = true;
+      break;
+    }
+    if (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
+      while (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) delay(10);
+      break;
+    }
+    checkSleep();
+    delay(50);
+  }
+  setScreenRedraw(nullptr);
+
+  if (!doLink) {
+    ledsFlash(strip.Color(255, 100, 0), 1);
+    showMsg(T->cancelled, "");
+    delay(1500);
+    return;
+  }
+
+  showMsg(T->sending, nom);
+  StaticJsonDocument<256> linkDoc;
+  if (!callApi(buildUrl("link", "uid=" + uid + "&id=" + String(wineId)), linkDoc)
+      || !linkDoc["ok"].as<bool>()) {
+    showMsg(T->apiError, linkDoc["error"] | "");
+    ledsFlash(strip.Color(255, 0, 0), 2);
+    delay(2000);
+    return;
+  }
+
+  ledsFlash(strip.Color(0, 255, 0), 3);
+  showMsg(T->linkDone, nom, "");
+  delay(2000);
+}
+
 void doLookup(const String& uid) {
   showMsg(T->searching, uid);
   StaticJsonDocument<512> doc;
@@ -342,7 +410,7 @@ void doLookup(const String& uid) {
         if (found) {
           doUpdate(+1);
         } else {
-          doRegister(uid);
+          doLinkOrRegister(uid);
         }
         delay(1500);
         lastUid = "";

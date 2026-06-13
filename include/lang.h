@@ -63,6 +63,10 @@ struct LangStrings {
     const char* otaChecking;
     const char* otaAvailable;
     const char* otaUpdate;
+    // Association RFID
+    const char* linkAssociate;
+    const char* linkDone;
+    const char* linkNone;
 };
 
 extern const LangStrings LANG_FR;

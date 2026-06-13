@@ -45,7 +45,10 @@ const LangStrings LANG_FR = {
     "Mise a jour...",       // otaUpdating
     "Verif. mise a jour",  // otaChecking
     "MAJ disponible !",    // otaAvailable
-    "+ Mettre a jour"      // otaUpdate
+    "+ Mettre a jour",     // otaUpdate
+    "+ Associer",          // linkAssociate
+    "Associe !",           // linkDone
+    "Aucun vin sans UID"   // linkNone
 };
 
 const LangStrings LANG_EN = {
@@ -93,7 +96,10 @@ const LangStrings LANG_EN = {
     "Updating...",          // otaUpdating
     "Checking update...",  // otaChecking
     "Update available!",   // otaAvailable
-    "+ Update now"         // otaUpdate
+    "+ Update now",        // otaUpdate
+    "+ Link",              // linkAssociate
+    "Linked!",             // linkDone
+    "No wine w/o UID"      // linkNone
 };
 
 const LangStrings LANG_IT = {
@@ -141,7 +147,10 @@ const LangStrings LANG_IT = {
     "Aggiornamento...",     // otaUpdating
     "Verifica aggiorn.",   // otaChecking
     "Aggiorn. disponib!",  // otaAvailable
-    "+ Aggiorna ora"       // otaUpdate
+    "+ Aggiorna ora",      // otaUpdate
+    "+ Associa",           // linkAssociate
+    "Associato!",          // linkDone
+    "Nessun vino lib."     // linkNone
 };
 
 const LangStrings* T = &LANG_FR;
