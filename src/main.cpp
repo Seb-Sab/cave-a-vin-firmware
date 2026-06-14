@@ -596,7 +596,7 @@ void setupWifi() {
 }
 
 // ============ OTA PROGRESS ============
-void showOtaProgress(int cur, int total) {
+void showOtaProgress(int cur, int total, const String& fromVer = "", const String& toVer = "") {
   int pct = (total > 0) ? (cur * 100 / total) : 0;
 
   oled.clearDisplay();
@@ -604,16 +604,20 @@ void showOtaProgress(int cur, int total) {
   oled.setTextSize(1);
   oled.setCursor(0, 0);
   oled.println(T->otaUpdating);
-  oled.setCursor(0, 14);
-  oled.println(FIRMWARE_VERSION);
+
+  // Ligne de version : "v2.7.0 -> v2.8.0"
+  oled.setCursor(0, 12);
+  if (fromVer.length() > 0 && toVer.length() > 0)
+    oled.println(fromVer + " -> " + toVer);
+  else if (fromVer.length() > 0)
+    oled.println(fromVer);
 
   // Barre de progression
-  oled.drawRect(0, 30, 128, 12, SH110X_WHITE);
-  oled.fillRect(0, 30, pct * 128 / 100, 12, SH110X_WHITE);
+  oled.drawRect(0, 28, 128, 10, SH110X_WHITE);
+  oled.fillRect(0, 28, pct * 128 / 100, 10, SH110X_WHITE);
 
   // Pourcentage
-  oled.setTextSize(1);
-  oled.setCursor(54, 48);
+  oled.setCursor(54, 44);
   oled.print(pct);
   oled.print("%");
   oled.display();
@@ -921,9 +925,11 @@ void setup() {
       }
       setScreenRedraw(nullptr);
       if (doOta) {
+        String fromV = ota.currentVersion;
+        String toV   = ota.latestVersion;
         applyOtaUpdate(ota.downloadUrl,
-                       []() { showOtaProgress(0, 1); },
-                       [](int cur, int total) { showOtaProgress(cur, total); });
+                       [fromV, toV]() { showOtaProgress(0, 1, fromV, toV); },
+                       [fromV, toV](int cur, int total) { showOtaProgress(cur, total, fromV, toV); });
         // Si on arrive ici : echec OTA, on continue normalement
       }
     }

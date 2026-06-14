@@ -3,6 +3,8 @@
 #include "config.h"
 #include "ota.h"
 #include <Arduino.h>
+
+extern void showOtaProgress(int cur, int total, const String& fromVer, const String& toVer);
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
@@ -627,7 +629,11 @@ static void handleOtaUpdate() {
     }
     server.send(200, "application/json", "{\"ok\":true}");
     delay(200);
-    applyOtaUpdate(lastOta.downloadUrl, otaStartCb, otaProgressCb);
+    String fromV = lastOta.currentVersion;
+    String toV   = lastOta.latestVersion;
+    applyOtaUpdate(lastOta.downloadUrl,
+        [fromV, toV]() { showOtaProgress(0, 1, fromV, toV); },
+        [fromV, toV](int c, int t) { showOtaProgress(c, t, fromV, toV); });
 }
 
 static void handleConfig() {
