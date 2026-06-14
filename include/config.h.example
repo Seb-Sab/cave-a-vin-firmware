@@ -23,6 +23,7 @@
 #define ENROLL_TIMEOUT_MS   (30000UL)               // sortie auto du mode enregistrement
 #define DARK_TIMEOUT_MS        (30000UL)              // obscurite maintenue avant mise en veille (30s)
 #define INACTIVITY_TIMEOUT_MS  (30UL * 60UL * 1000UL) // inactivite avant mise en veille (30 min)
+#define ALARM_ACK_TIMEOUT_MS   (5UL  * 60UL * 1000UL) // delai max affichage alarme sans acquittement (5 min)
 
 // ---- Broches ----
 #define PIN_LED         2   // LED interne ESP32

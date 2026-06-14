@@ -553,11 +553,14 @@ void sendEnvironment() {
     String l2 = "T=" + String(t, 1) + "C  H=" + String(h, 0) + "%";
     showMsg(l1, l2, T->pressBtnAck);
     setScreenRedraw([&]() { showMsg(l1, l2, T->pressBtnAck); });
-    while (true) {
+    bool acked = false;
+    unsigned long alarmStart = millis();
+    while (millis() - alarmStart < ALARM_ACK_TIMEOUT_MS) {
       updateBtnVisual();
       if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD || touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
         while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD || touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD)
           delay(10);
+        acked = true;
         lastActivityAt = millis();
         break;
       }
@@ -565,6 +568,9 @@ void sendEnvironment() {
       delay(50);
     }
     setScreenRedraw(nullptr);
+    if (!acked) {
+      goToSleep();
+    }
     redrawCurrentScreen();
   }
 }
