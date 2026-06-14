@@ -24,6 +24,7 @@
 #define DARK_TIMEOUT_MS        (30000UL)              // obscurite maintenue avant mise en veille (30s)
 #define INACTIVITY_TIMEOUT_MS  (30UL * 60UL * 1000UL) // inactivite avant mise en veille (30 min)
 #define ALARM_ACK_TIMEOUT_MS   (5UL  * 60UL * 1000UL) // delai max affichage alarme sans acquittement (5 min)
+#define STARTUP_ENV_DELAY_MS   (60000UL)               // delai avant premiere verif conditions au cold start (1 min)
 
 // ---- Broches ----
 #define PIN_LED         2   // LED interne ESP32

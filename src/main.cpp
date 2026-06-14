@@ -966,7 +966,9 @@ void setup() {
     }
   }
 
-  sendEnvironment();
+  // Premiere verif conditions dans STARTUP_ENV_DELAY_MS (pas au cold start immediat,
+  // pour ne pas bloquer la validation OTA ni afficher une alarme avant que l'ecran soit pret)
+  lastEnvSend = millis() - ENV_PERIOD_MS + STARTUP_ENV_DELAY_MS;
   showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
 }
 
