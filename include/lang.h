@@ -9,7 +9,6 @@ struct LangStrings {
     const char* initializing;
     const char* ready;
     const char* placeBottle;
-    const char* longPlusEnroll;
     // Scan vin
     const char* wineScanned;
     const char* qty;
@@ -26,7 +25,6 @@ struct LangStrings {
     const char* completeOnDash;
     const char* alreadyPresent;
     const char* cancelled;
-    const char* enrollTimeout;
     // Hints compteur
     const char* added;
     const char* removed;

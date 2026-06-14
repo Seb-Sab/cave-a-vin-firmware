@@ -5,7 +5,6 @@ const LangStrings LANG_FR = {
     "Initialisation...",    // initializing
     "Pret.",                // ready
     "Posez une bouteille",  // placeBottle
-    "+ long = enrolement",  // longPlusEnroll
     "== Vin scanne ==",     // wineScanned
     "Qte: ",                // qty
     "Recherche...",         // searching
@@ -20,7 +19,6 @@ const LangStrings LANG_FR = {
     "Completez le profil",  // completeOnDash
     "Deja present:",        // alreadyPresent
     "Annule",               // cancelled
-    "Timeout enrolement",   // enrollTimeout
     "+1 enregistre",        // added
     "-1 enregistre",        // removed
     "Connexion WiFi...",    // connectingWifi
@@ -59,7 +57,6 @@ const LangStrings LANG_EN = {
     "Initializing...",      // initializing
     "Ready.",               // ready
     "Place a bottle",       // placeBottle
-    "+ hold = enroll",      // longPlusEnroll
     "== Wine scanned ==",   // wineScanned
     "Qty: ",                // qty
     "Searching...",         // searching
@@ -74,7 +71,6 @@ const LangStrings LANG_EN = {
     "Complete profile",     // completeOnDash
     "Already exists:",      // alreadyPresent
     "Cancelled",            // cancelled
-    "Enroll timeout",       // enrollTimeout
     "+1 saved",             // added
     "-1 saved",             // removed
     "Connecting WiFi...",   // connectingWifi
@@ -113,7 +109,6 @@ const LangStrings LANG_IT = {
     "Avvio...",             // initializing
     "Pronto.",              // ready
     "Metti una bottiglia",  // placeBottle
-    "+ tieni = registra",   // longPlusEnroll
     "== Vino letto ==",     // wineScanned
     "Qta: ",                // qty
     "Ricerca...",           // searching
@@ -128,7 +123,6 @@ const LangStrings LANG_IT = {
     "Completa il profilo",  // completeOnDash
     "Gia' presente:",       // alreadyPresent
     "Annullato",            // cancelled
-    "Timeout registr.",     // enrollTimeout
     "+1 salvato",           // added
     "-1 salvato",           // removed
     "Connessione WiFi...",  // connectingWifi

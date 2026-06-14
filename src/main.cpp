@@ -45,10 +45,6 @@ bool          lastFound      = false;
 unsigned long lastReadAt  = 0;
 unsigned long lastEnvSend = 0;
 
-// Mode enregistrement
-bool          enrollMode    = false;
-unsigned long enrollStartAt = 0;
-
 // Boutons
 unsigned long btnPlusDownAt   = 0;
 unsigned long btnMinusDownAt  = 0;
@@ -73,8 +69,6 @@ void   doUpdate(int delta);
 void   doRegister(const String& uid);
 void   doLinkOrRegister(const String& uid);
 void   sendEnvironment();
-void   enterEnrollMode();
-void   exitEnrollMode(const String& reason = "");
 void   doTimerMeasure();
 void   handleButtons();
 void   applyBtnOverlay();
@@ -128,10 +122,6 @@ void updateLeds() {
     uint8_t r = (uint8_t)(val * 200.0f + 55.0f); // rouge vif 55-255
     color     = strip.Color(r, 0, 0);
     increment = 0.18f; // scintillement rapide (~3x)
-  } else if (enrollMode) {
-    uint8_t b = (uint8_t)(val * 80.0f + 10.0f);
-    color     = strip.Color(b / 2, 0, b);
-    increment = 0.06f;
   } else {
     uint8_t b = (uint8_t)(val * 80.0f + 10.0f);
     color     = strip.Color(0, 0, b);
@@ -424,7 +414,7 @@ void doLookup(const String& uid) {
         doUpdate(+1);
         delay(1500);
         lastUid = "";
-        showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
+        showMsg(T->ready, T->placeBottle);
         return;
       }
       checkSleep();
@@ -463,7 +453,7 @@ void doLookup(const String& uid) {
         }
         delay(1500);
         lastUid = "";
-        showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
+        showMsg(T->ready, T->placeBottle);
         return;
       }
       if (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
@@ -477,7 +467,7 @@ void doLookup(const String& uid) {
   }
 
   lastUid = "";
-  showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
+  showMsg(T->ready, T->placeBottle);
 }
 
 void doUpdate(int delta) {
@@ -575,23 +565,6 @@ void sendEnvironment() {
   }
 }
 
-// ============ MODE ENREGISTREMENT ============
-void enterEnrollMode() {
-  enrollMode = true;
-  enrollStartAt = millis();
-  lastUid = "";
-  showEnroll();
-}
-
-void exitEnrollMode(const String& reason) {
-  enrollMode = false;
-  if (reason.length() > 0) {
-    showMsg(reason);
-    delay(1200);
-  }
-  showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
-}
-
 // ============ VERIFICATION TOKEN ============
 bool verifyToken() {
   if (settings.deviceToken.length() == 0) return false;
@@ -667,13 +640,11 @@ void redrawCurrentScreen() {
     showMsg(T->configMode, PORTAL_AP_SSID, "192.168.4.1");
     return;
   }
-  if (enrollMode) {
-    showEnroll();
-  } else if (lastUid.length() > 0 && (millis() - lastReadAt < EDIT_WINDOW_MS)) {
+  if (lastUid.length() > 0 && (millis() - lastReadAt < EDIT_WINDOW_MS)) {
     showWine(lastName, lastMillesime, lastQty,
              lastFound ? T->plusMinusModify : T->longPlusRegister);
   } else {
-    showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
+    showMsg(T->ready, T->placeBottle);
   }
 }
 
@@ -722,12 +693,6 @@ void handleButtons() {
 
   if (plus) {
     if (btnPlusDownAt == 0) { btnPlusDownAt = now; btnPlusHandled = false; }
-    if (!btnPlusHandled && (now - btnPlusDownAt >= LONGPRESS_MS)) {
-      btnPlusHandled = true;
-      lastActivityAt = now;
-      Serial.println("BTN+ : appui long");
-      if (!enrollMode) enterEnrollMode();
-    }
   } else {
     if (btnPlusDownAt != 0) {
       unsigned long held = now - btnPlusDownAt;
@@ -740,12 +705,6 @@ void handleButtons() {
 
   if (minus) {
     if (btnMinusDownAt == 0) { btnMinusDownAt = now; btnMinusHandled = false; }
-    if (!btnMinusHandled && (now - btnMinusDownAt >= LONGPRESS_MS)) {
-      btnMinusHandled = true;
-      lastActivityAt = now;
-      Serial.println("BTN- : appui long");
-      if (enrollMode) exitEnrollMode(T->cancelled);
-    }
   } else {
     if (btnMinusDownAt != 0) {
       unsigned long held = now - btnMinusDownAt;
@@ -969,7 +928,7 @@ void setup() {
   // Premiere verif conditions dans STARTUP_ENV_DELAY_MS (pas au cold start immediat,
   // pour ne pas bloquer la validation OTA ni afficher une alarme avant que l'ecran soit pret)
   lastEnvSend = millis() - ENV_PERIOD_MS + STARTUP_ENV_DELAY_MS;
-  showMsg(T->ready, T->placeBottle, T->longPlusEnroll);
+  showMsg(T->ready, T->placeBottle);
 }
 
 // ============ LOOP ============
@@ -994,17 +953,8 @@ void loop() {
       nfc.begin();
       nfc.SAMConfig();
       flashFeedback();
-      if (enrollMode) {
-        doRegister(uidStr);
-        exitEnrollMode();
-      } else {
-        doLookup(uidStr);
-      }
+      doLookup(uidStr);
     }
-  }
-
-  if (enrollMode && (millis() - enrollStartAt > ENROLL_TIMEOUT_MS)) {
-    exitEnrollMode(T->enrollTimeout);
   }
 
   if (millis() - lastEnvSend > ENV_PERIOD_MS) {
