@@ -266,10 +266,13 @@ void doLinkOrRegister(const String& uid) {
   showMsg(T->searching, "");
   DynamicJsonDocument doc(4096);
   if (!callApi(buildUrl("unlinked"), doc) || !doc["ok"].as<bool>()) {
-    doRegister(uid);
+    showMsg(T->apiError, doc["error"] | "");
+    ledsFlash(strip.Color(255, 0, 0), 2);
+    delay(2000);
     return;
   }
   if (!doc["found"].as<bool>()) {
+    // Aucun vin sans UID : enregistrement classique
     showMsg(T->linkNone, "");
     delay(1500);
     doRegister(uid);
