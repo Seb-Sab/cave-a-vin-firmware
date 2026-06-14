@@ -938,10 +938,10 @@ void setup() {
     OtaStatus ota = checkOtaUpdate();
     if (ota.updateAvailable) {
       ledsFlash(strip.Color(0, 200, 255), 2);
-      String line3 = String(T->otaUpdate) + "  " + T->minusToIgnore;
-      showMsg(T->otaAvailable, ota.latestVersion, line3);
+      String line1 = String(T->otaAvailable) + " " + ota.latestVersion;
+      showMsg(line1, T->otaUpdate, T->minusToIgnore);
       unsigned long deadline = millis() + 30000UL; // 30s timeout
-      setScreenRedraw([&]() { showMsg(T->otaAvailable, ota.latestVersion, line3); });
+      setScreenRedraw([&]() { showMsg(line1, T->otaUpdate, T->minusToIgnore); });
       bool doOta = false;
       while (millis() < deadline) {
         updateBtnVisual();
