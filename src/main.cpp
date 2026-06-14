@@ -757,10 +757,14 @@ void goToSleep() {
   digitalWrite(PIN_LED, LOW);
   digitalWrite(PIN_MOSFET, HIGH);
 
-  esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_LDR, 1);
+  // Touch wakeup (incompatible avec ext0 — utiliser ext1 pour le LDR)
   touchSleepWakeUpEnable(PIN_BTN_PLUS,  TOUCH_THRESHOLD);
   touchSleepWakeUpEnable(PIN_BTN_MINUS, TOUCH_THRESHOLD);
   esp_sleep_enable_touchpad_wakeup();
+  // LDR wakeup uniquement si on s'endort dans le noir (evite le reveil immediat en milieu eclaire)
+  if (analogRead(PIN_LDR) < settings.ldrThreshold) {
+    esp_sleep_enable_ext1_wakeup(1ULL << PIN_LDR, ESP_EXT1_WAKEUP_ANY_HIGH);
+  }
   esp_sleep_enable_timer_wakeup(ENV_DAILY_WAKEUP_US);
 
   Serial.println("Deep sleep...");
