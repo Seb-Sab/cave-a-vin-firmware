@@ -626,11 +626,15 @@ void showOtaProgress(int cur, int total, const String& fromVer = "", const Strin
   oled.print("%");
   oled.display();
 
-  // LEDs : remplissage progressif bleu -> vert
-  int lit = pct * LED_COUNT / 100;
+  // LEDs : remplissage progressif sur les 11 LEDs principales uniquement
+  int lit = pct * LED_BTN_MINUS / 100;  // LED_BTN_MINUS = 11 = nombre de LEDs principales
   for (int i = 0; i < LED_COUNT; i++) {
-    if (i < lit) strip.setPixelColor(i, strip.Color(0, 180, 80));
-    else         strip.setPixelColor(i, strip.Color(0, 0, 20));
+    if (i == LED_BTN_MINUS || i == LED_BTN_PLUS)
+      strip.setPixelColor(i, 0);
+    else if (i < LED_BTN_MINUS)
+      strip.setPixelColor(i, i < lit ? strip.Color(0, 180, 80) : strip.Color(0, 0, 20));
+    else
+      strip.setPixelColor(i, 0);
   }
   strip.show();
 }
