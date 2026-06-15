@@ -45,7 +45,9 @@
 #define PN532_I2C_ADDR  0x24
 
 // ---- Ruban LED ----
-#define LED_COUNT       12
+#define LED_COUNT       15
+#define LED_BTN_MINUS   11   // LED 12 -> BTN-
+#define LED_BTN_PLUS    13   // LED 14 -> BTN+
 
 // ---- LDR seuil veille ----
 #define LDR_DARK_THRESHOLD  1000
