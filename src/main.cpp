@@ -74,7 +74,7 @@ void   handleButtons();
 void   applyBtnOverlay();
 void   redrawCurrentScreen();
 void   setScreenRedraw(std::function<void()> fn);
-void   updateBtnVisual();
+void   updateBtnVisual(bool active = false);
 void   checkSleep();
 void   goToSleep();
 
@@ -305,7 +305,7 @@ void doLinkOrRegister(const String& uid) {
   bool doLink   = false;
 
   while (!done) {
-    updateBtnVisual();
+    updateBtnVisual(true);
     bool plusNow  = touchRead(PIN_BTN_PLUS)  < TOUCH_THRESHOLD;
     bool minusNow = touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD;
     unsigned long now = millis();
@@ -396,7 +396,7 @@ void doLookup(const String& uid) {
       showWineCountdown(lastName, lastMillesime, lastQty, s);
     });
     while (millis() < deadline) {
-      updateBtnVisual();
+      updateBtnVisual(true);
       int sec = (int)((deadline - millis() + 999) / 1000);
       if (sec != lastSec) {
         lastSec = sec;
@@ -441,7 +441,7 @@ void doLookup(const String& uid) {
       else       showMsg(T->notRegistered, T->plusToAdd, T->minusToIgnore);
     });
     while (millis() < deadline) {
-      updateBtnVisual();
+      updateBtnVisual(true);
       if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) {
         while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) delay(10);
         lastActivityAt = millis();
@@ -546,7 +546,7 @@ void sendEnvironment() {
     bool acked = false;
     unsigned long alarmStart = millis();
     while (millis() - alarmStart < ALARM_ACK_TIMEOUT_MS) {
-      updateBtnVisual();
+      updateBtnVisual(true);
       if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD || touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
         while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD || touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD)
           delay(10);
@@ -660,15 +660,19 @@ static std::function<void()> screenRedrawFn = nullptr;
 
 void setScreenRedraw(std::function<void()> fn) { screenRedrawFn = fn; }
 
-void updateBtnVisual() {
+void updateBtnVisual(bool active) {
   static bool wasPlusActive  = false;
   static bool wasMinusActive = false;
   bool plusActive  = (touchRead(PIN_BTN_PLUS)  < TOUCH_THRESHOLD);
   bool minusActive = (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD);
 
-  // Indicateurs LED : blanc = choix disponible, vert = bouton appuye
-  strip.setPixelColor(LED_BTN_MINUS, minusActive ? strip.Color(0, 200, 0) : strip.Color(140, 200, 255));
-  strip.setPixelColor(LED_BTN_PLUS,  plusActive  ? strip.Color(0, 200, 0) : strip.Color(140, 200, 255));
+  if (active) {
+    strip.setPixelColor(LED_BTN_MINUS, minusActive ? strip.Color(0, 200, 0) : strip.Color(140, 200, 255));
+    strip.setPixelColor(LED_BTN_PLUS,  plusActive  ? strip.Color(0, 200, 0) : strip.Color(140, 200, 255));
+  } else {
+    strip.setPixelColor(LED_BTN_MINUS, strip.Color(0, 0, 0));
+    strip.setPixelColor(LED_BTN_PLUS,  strip.Color(0, 0, 0));
+  }
   strip.show();
 
   if (plusActive != wasPlusActive || minusActive != wasMinusActive) {
@@ -917,7 +921,7 @@ void setup() {
       setScreenRedraw([&]() { showMsg(line1, T->otaUpdate, T->minusToIgnore); });
       bool doOta = false;
       while (millis() < deadline) {
-        updateBtnVisual();
+        updateBtnVisual(true);
         if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) {
           while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) delay(10);
           doOta = true;
