@@ -670,13 +670,8 @@ void updateBtnVisual(bool active) {
   bool plusActive  = (touchRead(PIN_BTN_PLUS)  < TOUCH_THRESHOLD);
   bool minusActive = (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD);
 
-  if (active) {
-    strip.setPixelColor(LED_BTN_MINUS, minusActive ? strip.Color(0, 200, 0) : strip.Color(140, 200, 255));
-    strip.setPixelColor(LED_BTN_PLUS,  plusActive  ? strip.Color(0, 200, 0) : strip.Color(140, 200, 255));
-  } else {
-    strip.setPixelColor(LED_BTN_MINUS, strip.Color(0, 0, 0));
-    strip.setPixelColor(LED_BTN_PLUS,  strip.Color(0, 0, 0));
-  }
+  strip.setPixelColor(LED_BTN_MINUS, minusActive ? strip.Color(0, 200, 0) : (active ? strip.Color(140, 200, 255) : strip.Color(0, 0, 0)));
+  strip.setPixelColor(LED_BTN_PLUS,  plusActive  ? strip.Color(0, 200, 0) : (active ? strip.Color(140, 200, 255) : strip.Color(0, 0, 0)));
   strip.show();
 
   if (plusActive != wasPlusActive || minusActive != wasMinusActive) {
@@ -830,7 +825,7 @@ void setup() {
   digitalWrite(PIN_LED, LOW);
 
   strip.begin();
-  strip.setBrightness(204); // 80% de 255
+  strip.setBrightness(128); // 50% de 255
   ledsOff();
 
   pinMode(PIN_I2C_SCL, OUTPUT);
