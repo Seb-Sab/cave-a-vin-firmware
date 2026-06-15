@@ -127,7 +127,11 @@ void updateLeds() {
     color     = strip.Color(0, 0, b);
     increment = 0.06f;
   }
-  ledsColor(color);
+  for (int i = 0; i < LED_COUNT; i++) {
+    if (i == LED_BTN_MINUS || i == LED_BTN_PLUS) continue;
+    strip.setPixelColor(i, color);
+  }
+  strip.show();
   angle += increment;
   if (angle > 6.2832f) angle -= 6.2832f;
 }
