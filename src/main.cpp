@@ -830,7 +830,7 @@ void setup() {
   digitalWrite(PIN_LED, LOW);
 
   strip.begin();
-  strip.setBrightness(80);
+  strip.setBrightness(204); // 80% de 255
   ledsOff();
 
   pinMode(PIN_I2C_SCL, OUTPUT);
