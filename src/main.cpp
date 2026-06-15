@@ -665,6 +665,12 @@ void updateBtnVisual() {
   static bool wasMinusActive = false;
   bool plusActive  = (touchRead(PIN_BTN_PLUS)  < TOUCH_THRESHOLD);
   bool minusActive = (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD);
+
+  // Indicateurs LED : blanc = choix disponible, vert = bouton appuye
+  strip.setPixelColor(LED_BTN_MINUS, minusActive ? strip.Color(0, 200, 0) : strip.Color(200, 200, 200));
+  strip.setPixelColor(LED_BTN_PLUS,  plusActive  ? strip.Color(0, 200, 0) : strip.Color(200, 200, 200));
+  strip.show();
+
   if (plusActive != wasPlusActive || minusActive != wasMinusActive) {
     wasPlusActive  = plusActive;
     wasMinusActive = minusActive;
