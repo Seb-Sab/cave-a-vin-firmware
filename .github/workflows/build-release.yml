@@ -22,9 +22,7 @@ jobs:
 
       - name: Generate config.h from secrets
         env:
-          WIFI_SSID:        ${{ secrets.WIFI_SSID }}
-          WIFI_PASS:        ${{ secrets.WIFI_PASS }}
-          SUPABASE_URL:     ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL:      ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           cat > include/config.h << EOF
@@ -34,9 +32,9 @@ jobs:
           //  Cave a vin - configuration (generee par GitHub Actions)
           // =====================================================================
 
-          // ---- WiFi ----
-          #define WIFI_SSID   "${WIFI_SSID}"
-          #define WIFI_PASS   "${WIFI_PASS}"
+          // ---- WiFi (configure via portail captif, stocke en NVS) ----
+          #define WIFI_SSID   ""
+          #define WIFI_PASS   ""
 
           // ---- Supabase API ----
           #define SUPABASE_URL       "${SUPABASE_URL}"
