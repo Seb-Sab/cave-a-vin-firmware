@@ -67,6 +67,7 @@ String uidToString(uint8_t* uid, uint8_t uidLength);
 String httpCall(const String& url);
 String buildUrl(const String& action, const String& params = "");
 bool   callApi(const String& url, JsonDocument& doc);
+void   syncLanguage();
 void   doLookup(const String& uid);
 void   doUpdate(int delta);
 void   doRegister(const String& uid);
@@ -606,6 +607,17 @@ bool verifyToken() {
   return doc["ok"].as<bool>();
 }
 
+// Synchronise la langue courante du boitier vers la table devices (dashboard).
+// Appele une fois par demarrage : couvre le cas "changement de langue via le
+// portail" puisque handleSave() redemarre le boitier juste apres la sauvegarde.
+// Best-effort : on ignore le resultat, ca ne doit jamais bloquer le demarrage.
+void syncLanguage() {
+  if (settings.deviceToken.length() == 0) return;
+  String url = String(DASHBOARD_API_URL) + "?token=" + settings.deviceToken
+             + "&lang=" + settings.language;
+  httpCall(url);
+}
+
 // ============ WIFI ============
 void setupWifi() {
   ledsOff();
@@ -939,6 +951,8 @@ void setup() {
     startPortal();
     return;
   }
+
+  if (WiFi.status() == WL_CONNECTED) syncLanguage();
 
   // Vérification OTA uniquement au cold start (pas lors des réveils deep sleep)
   if (cause == ESP_SLEEP_WAKEUP_UNDEFINED && WiFi.status() == WL_CONNECTED) {

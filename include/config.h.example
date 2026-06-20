@@ -15,6 +15,9 @@
 #define SUPABASE_ANON_KEY  "${SUPABASE_ANON_KEY}"
 #define DEVICE_TOKEN_DEFAULT  ""  // a configurer via le portail
 
+// ---- Dashboard Next.js (sync langue boitier -> table devices) ----
+#define DASHBOARD_API_URL  "https://cave-a-vin-dashboard.vercel.app/api/device/set-lang"
+
 // ---- Periodes et timings ----
 #define ENV_PERIOD_MS       (10UL * 60UL * 1000UL)  // envoi T/H/P toutes les 10 min
 #define EDIT_WINDOW_MS      (10000UL)               // fenetre boutons apres lecture
