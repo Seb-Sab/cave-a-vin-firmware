@@ -256,8 +256,9 @@ void showWineCountdown(const String& name, const String& millesime, const String
   oled.print(cs);
   oled.setTextSize(1);
   oled.setCursor(0, 34);
-  String info = contenant.length() ? contenant : "-";
-  if (couleur.length()) info += "  " + couleur;
+  String info = contenant;
+  if (couleur.length()) info += (info.length() ? "  " : "") + couleur;
+  if (info.length() == 0) info = "-";
   if (info.length() > 21) info = info.substring(0, 21);
   oled.print(info);
   oled.setCursor(0, 56);
