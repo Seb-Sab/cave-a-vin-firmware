@@ -366,7 +366,9 @@ void doLinkOrRegister(const String& uid) {
 
 void doLookup(const String& uid) {
   showMsg(T->searching, uid);
-  StaticJsonDocument<512> doc;
+  // DynamicJsonDocument : la reponse d'un vin associe (tous les champs) peut depasser
+  // les 512 octets d'un StaticJsonDocument, faisant echouer le parsing (erreur reseau).
+  DynamicJsonDocument doc(2048);
   if (!callApi(buildUrl("lookup", "uid=" + uid), doc)) {
     showMsg(T->networkError, uid);
     ledsFlash(strip.Color(255, 0, 0), 2);
