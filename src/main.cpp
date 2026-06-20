@@ -40,6 +40,8 @@ bool nfcOk = false;
 String        lastUid        = "";
 String        lastName       = "";
 String        lastMillesime  = "";
+String        lastContenant  = "";
+String        lastCouleur    = "";
 int           lastQty        = 0;
 bool          lastFound      = false;
 unsigned long lastReadAt  = 0;
@@ -58,7 +60,8 @@ unsigned long lastActivityAt = 0;
 // ============ PROTOTYPES ============
 void   setupWifi();
 void   showMsg(const String& l1, const String& l2 = "", const String& l3 = "");
-void   showWine(const String& name, const String& millesime, int qty, const String& hint = "");
+void   showWine(const String& name, const String& millesime, const String& contenant,
+                 const String& couleur, int qty, const String& hint = "");
 void   showEnroll(const String& subtitle = "");
 String uidToString(uint8_t* uid, uint8_t uidLength);
 String httpCall(const String& url);
@@ -157,7 +160,8 @@ void showMsg(const String& l1, const String& l2, const String& l3) {
   oled.display();
 }
 
-void showWine(const String& name, const String& millesime, int qty, const String& hint) {
+void showWine(const String& name, const String& millesime, const String& contenant,
+              const String& couleur, int qty, const String& hint) {
   oled.clearDisplay();
   oled.setTextColor(SH110X_WHITE);
   oled.setTextSize(1);
@@ -168,7 +172,11 @@ void showWine(const String& name, const String& millesime, int qty, const String
   oled.setCursor(0, 10);
   oled.println(n);
   oled.setCursor(0, 20);
-  oled.print(millesime.length() ? millesime : "-");
+  String info = millesime.length() ? millesime : "-";
+  if (contenant.length()) info += "  " + contenant;
+  if (couleur.length())   info += "  " + couleur;
+  if (info.length() > 21) info = info.substring(0, 21);
+  oled.print(info);
   oled.setTextSize(2);
   oled.setCursor(0, 32);
   oled.print(T->qty);
@@ -227,7 +235,8 @@ bool callApi(const String& url, JsonDocument& doc) {
 }
 
 // ============ ACTIONS ============
-void showWineCountdown(const String& name, const String& millesime, int qty, int sec) {
+void showWineCountdown(const String& name, const String& millesime, const String& contenant,
+                        const String& couleur, int qty, int sec) {
   oled.clearDisplay();
   oled.setTextColor(SH110X_WHITE);
   oled.setTextSize(1);
@@ -245,6 +254,11 @@ void showWineCountdown(const String& name, const String& millesime, int qty, int
   oled.setCursor(128 - (int)cs.length() * 12, 20);
   oled.print(cs);
   oled.setTextSize(1);
+  oled.setCursor(0, 34);
+  String info = contenant.length() ? contenant : "-";
+  if (couleur.length()) info += "  " + couleur;
+  if (info.length() > 21) info = info.substring(0, 21);
+  oled.print(info);
   oled.setCursor(0, 56);
   oled.print(T->cancelMinus);
   applyBtnOverlay();
@@ -385,6 +399,8 @@ void doLookup(const String& uid) {
   lastName      = found ? String((const char*)(doc["nom"] | "?"))
                         : String(T->notRegistered);
   lastMillesime = found ? doc["millesime"].as<String>() : String("");
+  lastContenant = found ? String((const char*)(doc["contenant"] | "")) : String("");
+  lastCouleur   = found ? String((const char*)(doc["couleur"] | ""))   : String("");
   lastQty       = doc["qte"] | 0;
   lastReadAt    = millis();
 
@@ -396,14 +412,14 @@ void doLookup(const String& uid) {
     bool doDecrement = true;
     setScreenRedraw([&]() {
       int s = max(0, (int)((deadline - millis() + 999) / 1000));
-      showWineCountdown(lastName, lastMillesime, lastQty, s);
+      showWineCountdown(lastName, lastMillesime, lastContenant, lastCouleur, lastQty, s);
     });
     while (millis() < deadline) {
       updateBtnVisual(true);
       int sec = (int)((deadline - millis() + 999) / 1000);
       if (sec != lastSec) {
         lastSec = sec;
-        showWineCountdown(lastName, lastMillesime, lastQty, sec);
+        showWineCountdown(lastName, lastMillesime, lastContenant, lastCouleur, lastQty, sec);
       }
       if (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
         while (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) delay(10);
@@ -491,7 +507,7 @@ void doUpdate(int delta) {
   lastQty  = doc["qte"] | lastQty;
   lastName = String((const char*)(doc["nom"] | lastName.c_str()));
   ledsFlash(strip.Color(0, 255, 0), 1);
-  showWine(lastName, lastMillesime, lastQty,
+  showWine(lastName, lastMillesime, lastContenant, lastCouleur, lastQty,
            delta > 0 ? T->added : T->removed);
   lastReadAt = millis();
 }
@@ -652,7 +668,7 @@ void redrawCurrentScreen() {
     return;
   }
   if (lastUid.length() > 0 && (millis() - lastReadAt < EDIT_WINDOW_MS)) {
-    showWine(lastName, lastMillesime, lastQty,
+    showWine(lastName, lastMillesime, lastContenant, lastCouleur, lastQty,
              lastFound ? T->plusMinusModify : T->longPlusRegister);
   } else {
     showMsg(T->ready, T->placeBottle);
