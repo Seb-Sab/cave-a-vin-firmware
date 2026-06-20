@@ -410,6 +410,8 @@ void doLookup(const String& uid) {
     unsigned long deadline = millis() + EDIT_WINDOW_MS;
     int lastSec = -1;
     bool doDecrement = true;
+    unsigned long minusDownAt = 0;
+    bool minusWas = false;
     setScreenRedraw([&]() {
       int s = max(0, (int)((deadline - millis() + 999) / 1000));
       showWineCountdown(lastName, lastMillesime, lastContenant, lastCouleur, lastQty, s);
@@ -421,11 +423,22 @@ void doLookup(const String& uid) {
         lastSec = sec;
         showWineCountdown(lastName, lastMillesime, lastContenant, lastCouleur, lastQty, sec);
       }
-      if (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
-        while (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) delay(10);
+
+      bool minusNow = touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD;
+      if (minusNow && !minusWas) minusDownAt = millis();
+
+      if (minusNow && (millis() - minusDownAt >= LONGPRESS_MS)) {
+        // Appui long - : annulation immediate, quantite inchangee
         doDecrement = false;
+        minusWas    = minusNow;
         break;
       }
+      if (!minusNow && minusWas) {
+        // Appui court - (relache avant le seuil long) : confirmation immediate du retrait
+        break;
+      }
+      minusWas = minusNow;
+
       if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) {
         while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) delay(10);
         lastActivityAt = millis();
