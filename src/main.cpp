@@ -26,6 +26,7 @@
 #include "portal.h"
 #include "ota.h"
 #include "lang.h"
+#include "logo.h"
 
 // ============ OBJETS GLOBAUX ============
 Adafruit_SH1106G    oled(OLED_WIDTH, OLED_HEIGHT, &Wire, -1);
@@ -904,6 +905,16 @@ void setup() {
   }
   oled.clearDisplay();
   oled.display();
+
+  // Logo au demarrage a froid uniquement (pas a chaque reveil de veille)
+  if (cause == ESP_SLEEP_WAKEUP_UNDEFINED) {
+    oled.clearDisplay();
+    oled.drawBitmap((OLED_WIDTH - LOGO_WIDTH) / 2, (OLED_HEIGHT - LOGO_HEIGHT) / 2,
+                     LOGO_BITMAP, LOGO_WIDTH, LOGO_HEIGHT, SH110X_WHITE);
+    oled.display();
+    delay(3000);
+  }
+
   showMsg(T->appName, T->initializing);
 
   bmeOk = bme.begin(0x76) || bme.begin(0x77);
