@@ -300,7 +300,9 @@ void doLinkOrRegister(const String& uid) {
   refresh();
   setScreenRedraw([&]() { showMsg(curNom, curLine2, curLine3); });
 
-  // Detection appui court / long sur chaque bouton (action sur relachement)
+  // Detection appui court / long sur chaque bouton.
+  // Appui long : declenche des que le seuil est atteint, sans attendre le relachement.
+  // Appui court : declenche au relachement, si le seuil long n'a pas ete atteint.
   unsigned long plusDownAt  = 0;
   unsigned long minusDownAt = 0;
   bool plusWas  = false;
@@ -317,21 +319,16 @@ void doLinkOrRegister(const String& uid) {
     if (plusNow  && !plusWas)  plusDownAt  = now;
     if (minusNow && !minusWas) minusDownAt = now;
 
-    if (!plusNow && plusWas) {
-      if (now - plusDownAt >= LONGPRESS_MS) {
-        doLink = true; done = true;           // long + = associer
-      } else {
-        idx = (idx + 1) % count;             // court + = suivant
-        refresh();
-      }
-    }
-    if (!minusNow && minusWas) {
-      if (now - minusDownAt >= LONGPRESS_MS) {
-        done = true;                          // long - = sortir
-      } else {
-        idx = (idx - 1 + count) % count;    // court - = precedent
-        refresh();
-      }
+    if (plusNow && (now - plusDownAt >= LONGPRESS_MS)) {
+      doLink = true; done = true;             // long + = associer (immediat)
+    } else if (minusNow && (now - minusDownAt >= LONGPRESS_MS)) {
+      done = true;                            // long - = sortir (immediat)
+    } else if (!plusNow && plusWas) {
+      idx = (idx + 1) % count;               // court + = suivant
+      refresh();
+    } else if (!minusNow && minusWas) {
+      idx = (idx - 1 + count) % count;      // court - = precedent
+      refresh();
     }
 
     plusWas  = plusNow;
