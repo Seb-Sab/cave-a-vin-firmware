@@ -20,7 +20,7 @@
 #define DASHBOARD_API_URL_NOTIFY  "https://cave-a-vin-dashboard.vercel.app/api/device/set-notify"
 
 // ---- Telegram (lien de connexion auto via webhook serveur) ----
-#define TELEGRAM_BOT_USERNAME  "VotreBotUsername_bot"
+#define TELEGRAM_BOT_USERNAME  "CleverCellarAlerts_bot"
 
 // ---- Periodes et timings ----
 #define ENV_PERIOD_MS       (10UL * 60UL * 1000UL)  // envoi T/H/P toutes les 10 min

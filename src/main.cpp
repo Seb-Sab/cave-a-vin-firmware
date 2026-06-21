@@ -79,6 +79,7 @@ void   doTimerMeasure();
 void   handleButtons();
 void   applyBtnOverlay();
 void   redrawCurrentScreen();
+void   showPortalScreen();
 void   setScreenRedraw(std::function<void()> fn);
 void   updateBtnVisual(bool active = false);
 void   checkSleep();
@@ -712,9 +713,20 @@ void applyBtnOverlay() {
     oled.fillRect(0, 0, 5, OLED_HEIGHT, SH110X_WHITE);
 }
 
+// En mode portail double (Wifi maison deja connu) : privilegier l'IP locale,
+// accessible depuis le Wifi maison sans perdre l'acces internet du telephone
+// (necessaire pour les actions en ligne comme la connexion Telegram).
+void showPortalScreen() {
+  if (WiFi.status() == WL_CONNECTED) {
+    showMsg(T->configMode, WiFi.localIP().toString(), PORTAL_AP_SSID);
+  } else {
+    showMsg(T->configMode, PORTAL_AP_SSID, "192.168.4.1");
+  }
+}
+
 void redrawCurrentScreen() {
   if (isPortalActive()) {
-    showMsg(T->configMode, PORTAL_AP_SSID, "192.168.4.1");
+    showPortalScreen();
     return;
   }
   if (lastUid.length() > 0 && (millis() - lastReadAt < EDIT_WINDOW_MS)) {
@@ -1035,7 +1047,7 @@ void setup() {
 void loop() {
   if (isPortalActive()) {
     if (isPortalMsgNeeded())
-      showMsg(T->configMode, PORTAL_AP_SSID, "192.168.4.1");
+      showPortalScreen();
     handlePortal();
     updateLeds();
     updateBtnVisual();
