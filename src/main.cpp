@@ -69,6 +69,7 @@ String httpCall(const String& url);
 String buildUrl(const String& action, const String& params = "");
 bool   callApi(const String& url, JsonDocument& doc);
 void   syncLanguage();
+void   syncNotifySettings();
 void   doLookup(const String& uid);
 void   doUpdate(int delta);
 void   doRegister(const String& uid);
@@ -561,9 +562,16 @@ void sendEnvironment() {
   float h = bme.readHumidity();
   float p = bme.readPressure() / 100.0f;
   Serial.printf("sendEnv: T=%.1f H=%.1f P=%.1f\n", t, h, p);
+
+  // Codes d'alerte transmis au backend (notifications email/Telegram)
+  String alertCodes = "";
+  if (t < settings.tempMin || t > settings.tempMax) alertCodes += "temperature";
+  if (h < settings.humMin  || h > settings.humMax)  alertCodes += (alertCodes.length() ? ",humidite" : "humidite");
+
   String params = "t=" + String(t, 1) +
                   "&h=" + String(h, 1) +
-                  "&p=" + String(p, 1);
+                  "&p=" + String(p, 1) +
+                  "&alert=" + alertCodes;
   StaticJsonDocument<256> doc;
   bool ok = callApi(buildUrl("env", params), doc);
   if (ok) Serial.printf("sendEnv: ok=%d\n", doc["ok"].as<bool>());
@@ -617,6 +625,20 @@ void syncLanguage() {
   if (settings.deviceToken.length() == 0) return;
   String url = String(DASHBOARD_API_URL) + "?token=" + settings.deviceToken
              + "&lang=" + settings.language;
+  httpCall(url);
+}
+
+// Synchronise les preferences de notification (telephone, Telegram, canaux actifs)
+// vers la table devices. Meme logique/limites que syncLanguage().
+void syncNotifySettings() {
+  if (settings.deviceToken.length() == 0) return;
+  String phoneEnc = settings.phone;
+  phoneEnc.replace("+", "%2B");
+  String url = String(DASHBOARD_API_URL_NOTIFY) + "?token=" + settings.deviceToken
+             + "&phone="          + phoneEnc
+             + "&tgChatId="       + settings.telegramChatId
+             + "&notifyEmail="    + (settings.notifyEmail    ? "1" : "0")
+             + "&notifyTelegram=" + (settings.notifyTelegram ? "1" : "0");
   httpCall(url);
 }
 
@@ -964,7 +986,7 @@ void setup() {
     return;
   }
 
-  if (WiFi.status() == WL_CONNECTED) syncLanguage();
+  if (WiFi.status() == WL_CONNECTED) { syncLanguage(); syncNotifySettings(); }
 
   // Vérification OTA uniquement au cold start (pas lors des réveils deep sleep)
   if (cause == ESP_SLEEP_WAKEUP_UNDEFINED && WiFi.status() == WL_CONNECTED) {

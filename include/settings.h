@@ -17,6 +17,11 @@ struct Settings {
     float   tempMax;
     float   humMin;
     float   humMax;
+    // Notifications externes (alertes temperature/humidite)
+    String  phone;              // format international, ex "+33612345678"
+    String  telegramChatId;
+    bool    notifyEmail;
+    bool    notifyTelegram;
 };
 
 extern Settings settings;
