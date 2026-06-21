@@ -21,7 +21,6 @@ void loadSettings() {
     settings.humMin               = p.getFloat("hMin",     HUM_MIN_DEFAULT);
     settings.humMax               = p.getFloat("hMax",     HUM_MAX_DEFAULT);
     settings.phone                = p.getString("phone",   "");
-    settings.telegramChatId       = p.getString("tgChatId", "");
     settings.notifyEmail          = p.getBool(  "notifEm", false);
     settings.notifyTelegram       = p.getBool(  "notifTg", false);
     p.end();
@@ -45,7 +44,6 @@ void saveSettings() {
     p.putFloat("hMin",     settings.humMin);
     p.putFloat("hMax",     settings.humMax);
     p.putString("phone",    settings.phone);
-    p.putString("tgChatId", settings.telegramChatId);
     p.putBool(  "notifEm",  settings.notifyEmail);
     p.putBool(  "notifTg",  settings.notifyTelegram);
     p.end();

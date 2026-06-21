@@ -19,9 +19,8 @@ struct Settings {
     float   humMax;
     // Notifications externes (alertes temperature/humidite)
     String  phone;              // format international, ex "+33612345678"
-    String  telegramChatId;
     bool    notifyEmail;
-    bool    notifyTelegram;
+    bool    notifyTelegram;     // chat Telegram associe via lien de connexion (webhook serveur)
 };
 
 extern Settings settings;

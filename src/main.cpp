@@ -628,15 +628,16 @@ void syncLanguage() {
   httpCall(url);
 }
 
-// Synchronise les preferences de notification (telephone, Telegram, canaux actifs)
-// vers la table devices. Meme logique/limites que syncLanguage().
+// Synchronise les preferences de notification (telephone, canaux actifs) vers la
+// table devices. Le chat ID Telegram n'est PAS synchronise ici : il est associe
+// exclusivement par le webhook serveur (lien de connexion), jamais ecrit par le
+// boitier, pour eviter qu'une sync locale ne l'efface.
 void syncNotifySettings() {
   if (settings.deviceToken.length() == 0) return;
   String phoneEnc = settings.phone;
   phoneEnc.replace("+", "%2B");
   String url = String(DASHBOARD_API_URL_NOTIFY) + "?token=" + settings.deviceToken
              + "&phone="          + phoneEnc
-             + "&tgChatId="       + settings.telegramChatId
              + "&notifyEmail="    + (settings.notifyEmail    ? "1" : "0")
              + "&notifyTelegram=" + (settings.notifyTelegram ? "1" : "0");
   httpCall(url);

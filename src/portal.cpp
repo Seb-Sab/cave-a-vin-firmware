@@ -84,6 +84,8 @@ button{width:100%;padding:10px;border:none;border-radius:5px;cursor:pointer;font
 .chk-row{display:flex;align-items:center;gap:8px;font-size:.9em;color:#ddd;margin-top:10px;cursor:pointer}
 .chk-row input{width:auto}
 .chk-row.disabled{opacity:.45;cursor:default}
+.btn-tg{display:block;text-align:center;text-decoration:none;background:#1e2a3a;color:#7ba8c8;border:1px solid #3a6a9a;border-radius:5px;padding:10px;font-size:.9em;margin-top:10px}
+.btn-tg:hover{background:#2a3a4a}
 </style>
 </head>
 <body>
@@ -192,11 +194,8 @@ En dessous de 50% : bouchons secs. Au-dessus de 85% : risque de moisissures.</di
 <input type="tel" id="phone" placeholder="+33612345678">
 <label class="chk-row"><input type="checkbox" id="notifyEmail"> <span data-i18n="notif_email">Email</span></label>
 <label class="chk-row"><input type="checkbox" id="notifyTelegram"> <span data-i18n="notif_telegram">Telegram</span></label>
-<div id="tgChatIdWrap" style="display:none">
-  <label data-i18n="notif_tg_chatid">Chat ID Telegram</label>
-  <input type="text" id="tgChatId" placeholder="123456789">
-  <p class="hint" data-i18n="notif_tg_hint">Cherchez votre bot sur Telegram, envoyez /start, puis ouvrez https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates pour trouver votre chat ID.</p>
-</div>
+<a id="tgConnectBtn" class="btn-tg" href="#" target="_blank" data-i18n="notif_tg_connect">Connecter Telegram</a>
+<p class="hint" data-i18n="notif_tg_hint">Ouvrez ce lien depuis votre t&eacute;l&eacute;phone : Telegram s&apos;ouvre et associe automatiquement votre compte, sans rien copier.</p>
 <label class="chk-row disabled"><input type="checkbox" disabled> <span data-i18n="notif_whatsapp">WhatsApp (bient&ocirc;t disponible)</span></label>
 </section>
 
@@ -270,8 +269,8 @@ var i18n={
     notif_phone:'Téléphone (format international)',
     notif_email:'Email',
     notif_telegram:'Telegram',
-    notif_tg_chatid:'Chat ID Telegram',
-    notif_tg_hint:'Cherchez votre bot sur Telegram, envoyez /start, puis ouvrez https://api.telegram.org/bot<TOKEN>/getUpdates pour trouver votre chat ID.',
+    notif_tg_connect:'Connecter Telegram',
+    notif_tg_hint:'Ouvrez ce lien depuis votre téléphone : Telegram s\'ouvre et associe automatiquement votre compte, sans rien copier.',
     notif_whatsapp:'WhatsApp (bientôt disponible)',
     ota_title:'Mise à jour firmware',
     ota_current_lbl:'Version installée :',
@@ -338,8 +337,8 @@ var i18n={
     notif_phone:'Phone (international format)',
     notif_email:'Email',
     notif_telegram:'Telegram',
-    notif_tg_chatid:'Telegram Chat ID',
-    notif_tg_hint:'Find your bot on Telegram, send /start, then open https://api.telegram.org/bot<TOKEN>/getUpdates to find your chat ID.',
+    notif_tg_connect:'Connect Telegram',
+    notif_tg_hint:'Open this link from your phone: Telegram opens and links your account automatically, nothing to copy.',
     notif_whatsapp:'WhatsApp (coming soon)',
     ota_title:'Firmware update',
     ota_current_lbl:'Installed version:',
@@ -406,8 +405,8 @@ var i18n={
     notif_phone:'Telefono (formato internazionale)',
     notif_email:'Email',
     notif_telegram:'Telegram',
-    notif_tg_chatid:'Chat ID Telegram',
-    notif_tg_hint:'Cerca il tuo bot su Telegram, invia /start, poi apri https://api.telegram.org/bot<TOKEN>/getUpdates per trovare il tuo chat ID.',
+    notif_tg_connect:'Connetti Telegram',
+    notif_tg_hint:'Apri questo link dal tuo telefono: Telegram si apre e collega automaticamente il tuo account, senza copiare nulla.',
     notif_whatsapp:'WhatsApp (presto disponibile)',
     ota_title:'Aggiornamento firmware',
     ota_current_lbl:'Versione installata:',
@@ -501,19 +500,18 @@ fetch('/config').then(function(r){return r.json();}).then(function(c){
   var s=document.getElementById('ssid');
   s.innerHTML='';
   if(cs){var o=document.createElement('option');o.value=cs;o.textContent=cs;s.appendChild(o);}
-  ['nom','prenom','email','devToken','phone','tgChatId'].forEach(function(k){if(c[k])document.getElementById(k).value=c[k];});
+  ['nom','prenom','email','devToken','phone'].forEach(function(k){if(c[k])document.getElementById(k).value=c[k];});
   var keys=['ldrThr','darkS','inactM','tMin','tMax','hMin','hMax'];
   keys.forEach(function(k){if(c[k]!=null)document.getElementById(k).value=c[k];});
   document.getElementById('notifyEmail').checked=!!c.notifyEmail;
   document.getElementById('notifyTelegram').checked=!!c.notifyTelegram;
-  document.getElementById('tgChatIdWrap').style.display=c.notifyTelegram?'':'none';
+  if(c.devToken&&c.tgBot){
+    var payload=c.devToken.replace(/-/g,'');
+    document.getElementById('tgConnectBtn').href='https://t.me/'+c.tgBot+'?start='+payload;
+  }
   if(c.version)document.getElementById('otaCurrent').textContent=c.version;
   if(!c.devToken){document.getElementById('requestSection').style.display='';}
   setLang(c.lang||'fr');
-});
-
-document.getElementById('notifyTelegram').addEventListener('change',function(){
-  document.getElementById('tgChatIdWrap').style.display=this.checked?'':'none';
 });
 
 function checkOta(){
@@ -609,8 +607,7 @@ function save(){
     hMax:parseFloat(document.getElementById('hMax').value)||80,
     phone:document.getElementById('phone').value,
     notifyEmail:document.getElementById('notifyEmail').checked,
-    notifyTelegram:document.getElementById('notifyTelegram').checked,
-    tgChatId:document.getElementById('tgChatId').value
+    notifyTelegram:document.getElementById('notifyTelegram').checked
   };
   var tr=i18n[currentLang];
   document.getElementById('msg').textContent=tr.saving;
@@ -706,9 +703,9 @@ static void handleConfig() {
     doc["hMin"]     = settings.humMin;
     doc["hMax"]     = settings.humMax;
     doc["phone"]          = settings.phone;
-    doc["tgChatId"]       = settings.telegramChatId;
     doc["notifyEmail"]    = settings.notifyEmail;
     doc["notifyTelegram"] = settings.notifyTelegram;
+    doc["tgBot"]          = TELEGRAM_BOT_USERNAME;
     String out;
     serializeJson(doc, out);
     server.send(200, "application/json", out);
@@ -738,7 +735,6 @@ static void handleSave() {
     settings.humMin               = doc["hMin"]     | settings.humMin;
     settings.humMax               = doc["hMax"]     | settings.humMax;
     settings.phone                = doc["phone"]          | settings.phone.c_str();
-    settings.telegramChatId       = doc["tgChatId"]       | settings.telegramChatId.c_str();
     settings.notifyEmail          = doc["notifyEmail"]    | settings.notifyEmail;
     settings.notifyTelegram       = doc["notifyTelegram"] | settings.notifyTelegram;
     saveSettings();
