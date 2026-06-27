@@ -85,6 +85,7 @@ button{width:100%;padding:10px;border:none;border-radius:5px;cursor:pointer;font
 .pw-toggle{position:absolute;right:6px;top:6px;width:auto;background:none;border:none;padding:5px 6px;cursor:pointer;margin:0;color:#888;display:flex;align-items:center}
 .pw-toggle:hover{color:#bbb}
 .pw-wrap input{padding-right:34px}
+input[type="password"]::-ms-reveal,input[type="password"]::-ms-clear{display:none}
 .chk-row{display:flex;align-items:center;gap:8px;font-size:.9em;color:#ddd;margin-top:10px;cursor:pointer}
 .chk-row input{width:auto}
 .chk-row.disabled{opacity:.45;cursor:default}
