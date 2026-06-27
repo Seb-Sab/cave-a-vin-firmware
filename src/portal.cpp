@@ -82,7 +82,8 @@ button{width:100%;padding:10px;border:none;border-radius:5px;cursor:pointer;font
 .btn-reset:hover{background:#7a1a1a}
 .danger-warn{font-size:.8em;color:#a66;margin-top:8px;line-height:1.5}
 .pw-wrap{position:relative}
-.pw-toggle{position:absolute;right:6px;top:6px;width:auto;background:none;border:none;padding:4px 6px;font-size:1.1em;cursor:pointer;margin:0}
+.pw-toggle{position:absolute;right:6px;top:6px;width:auto;background:none;border:none;padding:5px 6px;cursor:pointer;margin:0;color:#888;display:flex;align-items:center}
+.pw-toggle:hover{color:#bbb}
 .pw-wrap input{padding-right:34px}
 .chk-row{display:flex;align-items:center;gap:8px;font-size:.9em;color:#ddd;margin-top:10px;cursor:pointer}
 .chk-row input{width:auto}
@@ -132,7 +133,7 @@ button{width:100%;padding:10px;border:none;border-radius:5px;cursor:pointer;font
 <label data-i18n="wifi_pass">Mot de passe</label>
 <div class="pw-wrap">
   <input type="password" id="pass" data-i18n-ph="wifi_pass_ph" placeholder="Laisser vide pour conserver l'actuel">
-  <button type="button" class="pw-toggle" onclick="togglePw('pass',this)">&#128065;</button>
+  <button type="button" class="pw-toggle" onclick="togglePw('pass',this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
 </div>
 </section>
 
@@ -443,11 +444,14 @@ var i18n={
   }
 };
 
+var EYE_OPEN='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>';
+var EYE_OFF='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
 function togglePw(id,btn){
   var inp=document.getElementById(id);
   var show=inp.type==='password';
   inp.type=show?'text':'password';
-  btn.style.opacity=show?'1':'.6';
+  btn.innerHTML=show?EYE_OFF:EYE_OPEN;
 }
 
 function setLang(lang){
