@@ -81,6 +81,9 @@ button{width:100%;padding:10px;border:none;border-radius:5px;cursor:pointer;font
 .btn-reset{background:#5a1010;color:#ff9999;border:1px solid #8a3030;font-weight:bold;margin-top:8px}
 .btn-reset:hover{background:#7a1a1a}
 .danger-warn{font-size:.8em;color:#a66;margin-top:8px;line-height:1.5}
+.pw-wrap{position:relative}
+.pw-toggle{position:absolute;right:6px;top:6px;width:auto;background:none;border:none;padding:4px 6px;font-size:1.1em;cursor:pointer;margin:0}
+.pw-wrap input{padding-right:34px}
 .chk-row{display:flex;align-items:center;gap:8px;font-size:.9em;color:#ddd;margin-top:10px;cursor:pointer}
 .chk-row input{width:auto}
 .chk-row.disabled{opacity:.45;cursor:default}
@@ -127,7 +130,10 @@ button{width:100%;padding:10px;border:none;border-radius:5px;cursor:pointer;font
 <select id="ssid"></select>
 <button class="btn-scan" id="scanBtn" onclick="scanWifi()" data-i18n="wifi_scan_btn">Scanner les r&eacute;seaux</button>
 <label data-i18n="wifi_pass">Mot de passe</label>
-<input type="password" id="pass" data-i18n-ph="wifi_pass_ph" placeholder="Laisser vide pour conserver l'actuel">
+<div class="pw-wrap">
+  <input type="password" id="pass" data-i18n-ph="wifi_pass_ph" placeholder="Laisser vide pour conserver l'actuel">
+  <button type="button" class="pw-toggle" onclick="togglePw('pass',this)">&#128065;</button>
+</div>
 </section>
 
 <section>
@@ -436,6 +442,13 @@ var i18n={
     request_fill:'Compila Nome, Cognome ed Email.'
   }
 };
+
+function togglePw(id,btn){
+  var inp=document.getElementById(id);
+  var show=inp.type==='password';
+  inp.type=show?'text':'password';
+  btn.style.opacity=show?'1':'.6';
+}
 
 function setLang(lang){
   currentLang=lang;
