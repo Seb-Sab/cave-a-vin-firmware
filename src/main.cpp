@@ -74,6 +74,7 @@ void   doLookup(const String& uid);
 void   doUpdate(int delta);
 void   doRegister(const String& uid);
 void   doLinkOrRegister(const String& uid);
+void   doRetag(const String& oldUid);
 void   sendEnvironment();
 void   doTimerMeasure();
 void   handleButtons();
@@ -383,6 +384,104 @@ void doLinkOrRegister(const String& uid) {
   delay(2000);
 }
 
+// Change l'UID RFID associe a un vin deja enregistre.
+// Declenche par un appui long sur + pendant le decompte d'un vin scanne.
+//   appui long  + = confirmer le changement
+//   appui court - = annuler
+// Puis presentation de la nouvelle etiquette (appui court - pour annuler l'attente).
+void doRetag(const String& oldUid) {
+  showMsg(T->retagConfirm, T->retagConfirmHint);
+  unsigned long confirmDeadline = millis() + EDIT_WINDOW_MS;
+  unsigned long plusDownAt = 0;
+  bool plusWas    = false;
+  bool confirmed  = false;
+  while (millis() < confirmDeadline) {
+    updateBtnVisual(true);
+    bool plusNow = touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD;
+    if (plusNow && !plusWas) plusDownAt = millis();
+    if (plusNow && (millis() - plusDownAt >= LONGPRESS_MS)) {
+      confirmed = true;
+      break;
+    }
+    plusWas = plusNow;
+    if (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
+      while (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) delay(10);
+      break; // annule : confirmed reste false
+    }
+    checkSleep();
+    delay(30);
+  }
+
+  if (!confirmed) {
+    showMsg(T->cancelled, "");
+    delay(1500);
+    lastUid = "";
+    showMsg(T->ready, T->placeBottle);
+    return;
+  }
+
+  // Attente de la nouvelle etiquette
+  showMsg(T->retagScan, T->placeLabel, T->longMinusCancel);
+  unsigned long scanDeadline = millis() + ENROLL_TIMEOUT_MS;
+  String newUid = "";
+  while (millis() < scanDeadline) {
+    updateBtnVisual(true);
+    if (nfcOk) {
+      uint8_t uidBuf[7];
+      uint8_t uidLen;
+      if (nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uidBuf, &uidLen, 50)) {
+        newUid = uidToString(uidBuf, uidLen);
+        nfc.begin();
+        nfc.SAMConfig();
+        break;
+      }
+    }
+    if (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
+      while (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) delay(10);
+      break; // annule : newUid reste vide
+    }
+    checkSleep();
+    delay(30);
+  }
+
+  if (newUid.length() == 0) {
+    showMsg(T->cancelled, "");
+    delay(1500);
+    lastUid = "";
+    showMsg(T->ready, T->placeBottle);
+    return;
+  }
+  if (newUid == oldUid) {
+    ledsFlash(strip.Color(255, 100, 0), 2);
+    showMsg(T->retagSameTag, "");
+    delay(2000);
+    lastUid = "";
+    showMsg(T->ready, T->placeBottle);
+    return;
+  }
+
+  showMsg(T->sending, "");
+  StaticJsonDocument<256> doc;
+  String params = "uidOld=" + oldUid + "&uidNew=" + newUid;
+  if (!callApi(buildUrl("retag", params), doc)) {
+    showMsg(T->networkError);
+    ledsFlash(strip.Color(255, 0, 0), 2);
+    delay(2000);
+  } else if (!doc["ok"].as<bool>()) {
+    const char* err = doc["error"] | "";
+    showMsg(strcmp(err, "uid deja utilise") == 0 ? T->retagUsed : T->apiError, err);
+    ledsFlash(strip.Color(255, 0, 0), 2);
+    delay(2000);
+  } else {
+    ledsFlash(strip.Color(0, 255, 0), 3);
+    showMsg(T->retagDone, doc["nom"] | "");
+    delay(2000);
+  }
+
+  lastUid = "";
+  showMsg(T->ready, T->placeBottle);
+}
+
 void doLookup(const String& uid) {
   showMsg(T->searching, uid);
   // DynamicJsonDocument : la reponse d'un vin associe (tous les champs) peut depasser
@@ -417,6 +516,8 @@ void doLookup(const String& uid) {
     bool doDecrement = true;
     unsigned long minusDownAt = 0;
     bool minusWas = false;
+    unsigned long plusDownAt = 0;
+    bool plusWas = false;
     setScreenRedraw([&]() {
       int s = max(0, (int)((deadline - millis() + 999) / 1000));
       showWineCountdown(lastName, lastMillesime, lastContenant, lastCouleur, lastQty, s);
@@ -444,8 +545,18 @@ void doLookup(const String& uid) {
       }
       minusWas = minusNow;
 
-      if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) {
-        while (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) delay(10);
+      bool plusNow = touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD;
+      if (plusNow && !plusWas) plusDownAt = millis();
+
+      if (plusNow && (millis() - plusDownAt >= LONGPRESS_MS)) {
+        // Appui long + : proposer le changement d'etiquette pour ce vin
+        lastActivityAt = millis();
+        setScreenRedraw(nullptr);
+        doRetag(uid);
+        return;
+      }
+      if (!plusNow && plusWas) {
+        // Appui court + (relache avant le seuil long) : ajout immediat
         lastActivityAt = millis();
         setScreenRedraw(nullptr);
         doUpdate(+1);
@@ -454,6 +565,7 @@ void doLookup(const String& uid) {
         showMsg(T->ready, T->placeBottle);
         return;
       }
+      plusWas = plusNow;
       checkSleep();
       delay(50);
     }

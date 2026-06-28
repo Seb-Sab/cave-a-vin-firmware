@@ -68,6 +68,13 @@ struct LangStrings {
     const char* linkTitle;
     const char* linkNavHelp;
     const char* linkLongHelp;
+    // Changement d'etiquette (retag)
+    const char* retagConfirm;
+    const char* retagConfirmHint;
+    const char* retagScan;
+    const char* retagSameTag;
+    const char* retagDone;
+    const char* retagUsed;
 };
 
 extern const LangStrings LANG_FR;

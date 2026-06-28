@@ -49,7 +49,13 @@ const LangStrings LANG_FR = {
     "Aucun vin sans UID",  // linkNone
     "Assoc. etiquette",    // linkTitle
     "+/- defiler",         // linkNavHelp
-    "+l=OK  -l=sortir"     // linkLongHelp
+    "+l=OK  -l=sortir",    // linkLongHelp
+    "Changer etiquette ?", // retagConfirm
+    "+long=OK -=annuler",  // retagConfirmHint
+    "Nouvelle etiquette",  // retagScan
+    "Meme etiquette",      // retagSameTag
+    "Etiquette changee",   // retagDone
+    "Deja utilisee"        // retagUsed
 };
 
 const LangStrings LANG_EN = {
@@ -101,7 +107,13 @@ const LangStrings LANG_EN = {
     "No wine w/o UID",     // linkNone
     "Link label",          // linkTitle
     "+/- browse",          // linkNavHelp
-    "+l=OK  -l=quit"       // linkLongHelp
+    "+l=OK  -l=quit",      // linkLongHelp
+    "Change tag?",         // retagConfirm
+    "+long=OK -=cancel",   // retagConfirmHint
+    "New tag",             // retagScan
+    "Same tag",            // retagSameTag
+    "Tag changed",         // retagDone
+    "Already used"         // retagUsed
 };
 
 const LangStrings LANG_IT = {
@@ -153,7 +165,13 @@ const LangStrings LANG_IT = {
     "Nessun vino lib.",    // linkNone
     "Assoc. etichetta",    // linkTitle
     "+/- sfoglia",         // linkNavHelp
-    "+l=OK  -l=esci"       // linkLongHelp
+    "+l=OK  -l=esci",      // linkLongHelp
+    "Cambiare etichetta?", // retagConfirm
+    "+lungo=OK -=annulla", // retagConfirmHint
+    "Nuova etichetta",     // retagScan
+    "Stessa etichetta",    // retagSameTag
+    "Etichetta cambiata",  // retagDone
+    "Gia' usata"           // retagUsed
 };
 
 const LangStrings* T = &LANG_FR;
