@@ -786,7 +786,8 @@ void syncNotifySettings() {
   String url = String(DASHBOARD_API_URL_NOTIFY) + "?token=" + settings.deviceToken
              + "&phone="          + phoneEnc
              + "&notifyEmail="    + (settings.notifyEmail    ? "1" : "0")
-             + "&notifyTelegram=" + (settings.notifyTelegram ? "1" : "0");
+             + "&notifyTelegram=" + (settings.notifyTelegram ? "1" : "0")
+             + "&version="        + FIRMWARE_VERSION;
   httpCall(url);
 }
 
