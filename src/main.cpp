@@ -1019,24 +1019,31 @@ void checkSleep() {
   unsigned long now      = millis();
   unsigned long darkMs   = (unsigned long)settings.darkTimeoutS * 1000UL;
   unsigned long inactMs  = (unsigned long)settings.inactivityTimeoutMin * 60UL * 1000UL;
+  bool isDark = ldr < settings.ldrThreshold;
 
-  if (now - lastLog > 2000) {
-    lastLog = now;
-    unsigned long inactif = (now - lastActivityAt) / 1000;
-    Serial.printf("LDR: %d  seuil: %d  obscur: %lus  inactif: %lus/%lus\n",
-                  ldr, settings.ldrThreshold,
-                  darkSince ? (now - darkSince) / 1000 : 0,
-                  inactif, inactMs / 1000);
-  }
-
-  if (ldr < settings.ldrThreshold) {
+  if (isDark) {
     if (darkSince == 0) darkSince = now;
-    if (now - darkSince > darkMs) goToSleep();
   } else {
     darkSince = 0;
   }
 
-  if (now - lastActivityAt > inactMs) goToSleep();
+  // Le seuil de mise en veille depend de l'obscurite, mais le temps mesure reste
+  // toujours "depuis la derniere activite" (reset par tout appui bouton) : avant,
+  // l'obscurite se mesurait depuis son debut independamment de l'activite, ce qui
+  // endormait le boitier en pleine utilisation si la porte etait fermee depuis
+  // longtemps, meme en appuyant sur les boutons.
+  unsigned long inactif   = now - lastActivityAt;
+  unsigned long threshold = isDark ? darkMs : inactMs;
+
+  if (now - lastLog > 2000) {
+    lastLog = now;
+    Serial.printf("LDR: %d  seuil: %d  obscur: %lus  inactif: %lus/%lus\n",
+                  ldr, settings.ldrThreshold,
+                  darkSince ? (now - darkSince) / 1000 : 0,
+                  inactif / 1000, threshold / 1000);
+  }
+
+  if (inactif > threshold) goToSleep();
 }
 
 // ============ SETUP ============
