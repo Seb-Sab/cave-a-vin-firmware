@@ -1027,13 +1027,14 @@ void checkSleep() {
     darkSince = 0;
   }
 
-  // Le seuil de mise en veille depend de l'obscurite, mais le temps mesure reste
-  // toujours "depuis la derniere activite" (reset par tout appui bouton) : avant,
-  // l'obscurite se mesurait depuis son debut independamment de l'activite, ce qui
-  // endormait le boitier en pleine utilisation si la porte etait fermee depuis
-  // longtemps, meme en appuyant sur les boutons.
-  unsigned long inactif   = now - lastActivityAt;
+  // En obscurite, le chrono des 5 min doit repartir au debut de l'obscurite (pas
+  // seulement a la derniere activite bouton) : sinon une inactivite deja ancienne
+  // mais encore dans le budget des 30 min (piece eclairee) faisait basculer
+  // instantanement le seuil a 5 min des le moindre passage a l'obscurite, meme un
+  // bref bruit de capteur, provoquant une veille immediate.
   unsigned long threshold = isDark ? darkMs : inactMs;
+  unsigned long baseline  = isDark ? max(darkSince, lastActivityAt) : lastActivityAt;
+  unsigned long inactif   = now - baseline;
 
   if (now - lastLog > 2000) {
     lastLog = now;
