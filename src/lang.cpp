@@ -52,6 +52,7 @@ const LangStrings LANG_FR = {
     "+l=OK  -l=sortir",    // linkLongHelp
     "Changer etiquette ?", // retagConfirm
     "+long=OK -=annuler",  // retagConfirmHint
+    "Maintenez encore",    // retagHolding
     "Nouvelle etiquette",  // retagScan
     "Etiquette changee",   // retagDone
     "Deja utilisee"        // retagUsed
@@ -109,6 +110,7 @@ const LangStrings LANG_EN = {
     "+l=OK  -l=quit",      // linkLongHelp
     "Change tag?",         // retagConfirm
     "+long=OK -=cancel",   // retagConfirmHint
+    "Keep holding",        // retagHolding
     "New tag",             // retagScan
     "Tag changed",         // retagDone
     "Already used"         // retagUsed
@@ -166,6 +168,7 @@ const LangStrings LANG_IT = {
     "+l=OK  -l=esci",      // linkLongHelp
     "Cambiare etichetta?", // retagConfirm
     "+lungo=OK -=annulla", // retagConfirmHint
+    "Tieni premuto",       // retagHolding
     "Nuova etichetta",     // retagScan
     "Etichetta cambiata",  // retagDone
     "Gia' usata"           // retagUsed

@@ -71,6 +71,7 @@ struct LangStrings {
     // Changement d'etiquette (retag)
     const char* retagConfirm;
     const char* retagConfirmHint;
+    const char* retagHolding;
     const char* retagScan;
     const char* retagDone;
     const char* retagUsed;

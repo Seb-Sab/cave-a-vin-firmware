@@ -395,15 +395,32 @@ void doRetag(const String& oldUid) {
   unsigned long plusDownAt = 0;
   bool plusWas    = false;
   bool confirmed  = false;
+  int  lastShownSec = -1;
   while (millis() < confirmDeadline) {
     updateBtnVisual(true);
     bool plusNow = touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD;
-    if (plusNow && !plusWas) plusDownAt = millis();
-    if (plusNow && (millis() - plusDownAt >= LONGPRESS_MS)) {
-      confirmed = true;
-      break;
+    if (plusNow && !plusWas) { plusDownAt = millis(); lastShownSec = -1; }
+
+    if (plusNow) {
+      unsigned long held = millis() - plusDownAt;
+      if (held >= LONGPRESS_MS) {
+        confirmed = true;
+        break;
+      }
+      // Compte a rebours visible pendant le maintien, pour savoir combien de
+      // temps il reste a tenir (sinon impossible de juger si l'appui est pris
+      // en compte).
+      int remainingSec = (int)((LONGPRESS_MS - held + 999) / 1000);
+      if (remainingSec != lastShownSec) {
+        lastShownSec = remainingSec;
+        showMsg(T->retagConfirm, T->retagHolding, String(remainingSec) + "s");
+      }
+    } else if (plusWas) {
+      lastShownSec = -1;
+      showMsg(T->retagConfirm, T->retagConfirmHint);
     }
     plusWas = plusNow;
+
     if (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
       while (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) delay(10);
       break; // annule : confirmed reste false
