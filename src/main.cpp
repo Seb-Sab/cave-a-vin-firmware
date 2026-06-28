@@ -390,9 +390,24 @@ void doLinkOrRegister(const String& uid) {
 //   appui court - = annuler
 // Puis presentation de la nouvelle etiquette (appui court - pour annuler l'attente).
 void doRetag(const String& oldUid) {
-  showMsg(T->retagConfirm, T->retagConfirmHint);
-  unsigned long confirmDeadline = millis() + EDIT_WINDOW_MS;
   unsigned long plusDownAt = 0;
+  unsigned long confirmDeadline = millis() + EDIT_WINDOW_MS;
+  // updateBtnVisual() redessine l'ecran sur tout changement d'etat de bouton ;
+  // sans callback dedie, il retombe sur l'ecran generique (vin/pret) et ecrase
+  // notre message des qu'on relache le bouton. D'ou l'enregistrement explicite,
+  // comme le fait l'ecran de decompte normal.
+  auto confirmRedraw = [&]() {
+    if (touchRead(PIN_BTN_PLUS) < TOUCH_THRESHOLD) {
+      unsigned long held = millis() - plusDownAt;
+      unsigned long remain = held < LONGPRESS_MS ? (LONGPRESS_MS - held) : 0;
+      showMsg(T->retagConfirm, T->retagHolding, String((int)((remain + 999) / 1000)) + "s");
+    } else {
+      showMsg(T->retagConfirm, T->retagConfirmHint);
+    }
+  };
+  setScreenRedraw(confirmRedraw);
+  confirmRedraw();
+
   bool plusWas    = false;
   bool confirmed  = false;
   int  lastShownSec = -1;
@@ -413,11 +428,11 @@ void doRetag(const String& oldUid) {
       int remainingSec = (int)((LONGPRESS_MS - held + 999) / 1000);
       if (remainingSec != lastShownSec) {
         lastShownSec = remainingSec;
-        showMsg(T->retagConfirm, T->retagHolding, String(remainingSec) + "s");
+        confirmRedraw();
       }
     } else if (plusWas) {
       lastShownSec = -1;
-      showMsg(T->retagConfirm, T->retagConfirmHint);
+      confirmRedraw();
     }
     plusWas = plusNow;
 
@@ -428,6 +443,7 @@ void doRetag(const String& oldUid) {
     checkSleep();
     delay(30);
   }
+  setScreenRedraw(nullptr);
 
   if (!confirmed) {
     showMsg(T->cancelled, "");
@@ -441,6 +457,7 @@ void doRetag(const String& oldUid) {
   // lecteur (bouteille posee juste avant) : on ignore les lectures qui lui
   // correspondent encore et on continue d'attendre, plutot que de conclure tout
   // de suite "meme etiquette" sans laisser le temps de la retirer/remplacer.
+  setScreenRedraw([&]() { showMsg(T->retagScan, T->placeLabel, T->longMinusCancel); });
   showMsg(T->retagScan, T->placeLabel, T->longMinusCancel);
   unsigned long scanDeadline = millis() + ENROLL_TIMEOUT_MS;
   String newUid = "";
@@ -467,6 +484,7 @@ void doRetag(const String& oldUid) {
     checkSleep();
     delay(30);
   }
+  setScreenRedraw(nullptr);
 
   if (newUid.length() == 0) {
     showMsg(T->cancelled, "");
