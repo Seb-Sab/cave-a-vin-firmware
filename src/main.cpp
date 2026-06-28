@@ -420,7 +420,10 @@ void doRetag(const String& oldUid) {
     return;
   }
 
-  // Attente de la nouvelle etiquette
+  // Attente de la nouvelle etiquette. L'ancienne est souvent encore a portee du
+  // lecteur (bouteille posee juste avant) : on ignore les lectures qui lui
+  // correspondent encore et on continue d'attendre, plutot que de conclure tout
+  // de suite "meme etiquette" sans laisser le temps de la retirer/remplacer.
   showMsg(T->retagScan, T->placeLabel, T->longMinusCancel);
   unsigned long scanDeadline = millis() + ENROLL_TIMEOUT_MS;
   String newUid = "";
@@ -430,10 +433,14 @@ void doRetag(const String& oldUid) {
       uint8_t uidBuf[7];
       uint8_t uidLen;
       if (nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uidBuf, &uidLen, 50)) {
-        newUid = uidToString(uidBuf, uidLen);
+        String readUid = uidToString(uidBuf, uidLen);
         nfc.begin();
         nfc.SAMConfig();
-        break;
+        if (readUid != oldUid) {
+          newUid = readUid;
+          break;
+        }
+        // encore l'ancienne etiquette : on continue d'attendre qu'elle soit retiree
       }
     }
     if (touchRead(PIN_BTN_MINUS) < TOUCH_THRESHOLD) {
@@ -447,14 +454,6 @@ void doRetag(const String& oldUid) {
   if (newUid.length() == 0) {
     showMsg(T->cancelled, "");
     delay(1500);
-    lastUid = "";
-    showMsg(T->ready, T->placeBottle);
-    return;
-  }
-  if (newUid == oldUid) {
-    ledsFlash(strip.Color(255, 100, 0), 2);
-    showMsg(T->retagSameTag, "");
-    delay(2000);
     lastUid = "";
     showMsg(T->ready, T->placeBottle);
     return;

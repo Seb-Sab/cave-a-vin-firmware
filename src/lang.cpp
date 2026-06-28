@@ -53,7 +53,6 @@ const LangStrings LANG_FR = {
     "Changer etiquette ?", // retagConfirm
     "+long=OK -=annuler",  // retagConfirmHint
     "Nouvelle etiquette",  // retagScan
-    "Meme etiquette",      // retagSameTag
     "Etiquette changee",   // retagDone
     "Deja utilisee"        // retagUsed
 };
@@ -111,7 +110,6 @@ const LangStrings LANG_EN = {
     "Change tag?",         // retagConfirm
     "+long=OK -=cancel",   // retagConfirmHint
     "New tag",             // retagScan
-    "Same tag",            // retagSameTag
     "Tag changed",         // retagDone
     "Already used"         // retagUsed
 };
@@ -169,7 +167,6 @@ const LangStrings LANG_IT = {
     "Cambiare etichetta?", // retagConfirm
     "+lungo=OK -=annulla", // retagConfirmHint
     "Nuova etichetta",     // retagScan
-    "Stessa etichetta",    // retagSameTag
     "Etichetta cambiata",  // retagDone
     "Gia' usata"           // retagUsed
 };

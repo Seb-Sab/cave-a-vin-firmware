@@ -72,7 +72,6 @@ struct LangStrings {
     const char* retagConfirm;
     const char* retagConfirmHint;
     const char* retagScan;
-    const char* retagSameTag;
     const char* retagDone;
     const char* retagUsed;
 };
